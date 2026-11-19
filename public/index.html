@@ -1,0 +1,498 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Aashvi Hub | Quick-Commerce, Foods, Masale, Clothes, Electric &amp; Veggies</title>
+  <meta name="description" content="Aashvi Hub - Foods, authentic masale, clothes, electric parts and fresh vegetables. Managed by Dr Mukul Kumar (8988227729). Fast delivery across India.">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body data-theme="default">
+  <div id="fx" aria-hidden="true"></div>
+
+  <!-- Announcement & Festive Banner -->
+  <div id="banner" class="banner" hidden></div>
+
+  <!-- Top Support Bar -->
+  <div class="top-bar">
+    <div class="top-bar-inner">
+      <div class="top-bar-left">
+        <span class="badge-pill" data-t="top_managed">Doctor Managed</span>
+        <span><strong data-t="top_owner">Curated &amp; Directed by Dr Mukul Kumar</strong></span>
+        <span class="sep">•</span>
+        <span class="top-highlight" data-t="top_delivery">⚡ All-India Express Delivery</span>
+      </div>
+      <div class="top-bar-right">
+        <a href="tel:8988227729" class="top-link">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          <span data-t="top_call">Call: +91 8988227729</span>
+        </a>
+        <a href="https://wa.me/918988227729?text=Hello%20Dr%20Mukul%20Kumar,%20I%20have%20an%20inquiry%20regarding%20Aashvi%20Hub" target="_blank" rel="noopener" class="top-link whatsapp-top">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91C2.13 13.66 2.59 15.36 3.45 16.86L2.05 22L7.3 20.62C8.75 21.41 10.38 21.83 12.04 21.83C17.5 21.83 21.95 17.38 21.95 11.92C21.95 9.27 20.92 6.78 19.05 4.91C17.18 3.03 14.69 2 12.04 2M12.05 3.67C14.25 3.67 16.31 4.53 17.87 6.09C19.42 7.65 20.28 9.72 20.28 11.92C20.28 16.46 16.58 20.15 12.04 20.15C10.56 20.15 9.11 19.76 7.85 19L7.55 18.83L4.43 19.65L5.26 16.61L5.06 16.29C4.24 14.99 3.81 13.47 3.81 11.91C3.81 7.37 7.5 3.67 12.05 3.67Z"/></svg>
+          <span>WhatsApp</span>
+        </a>
+        <button id="openTrackBtn" class="top-btn-track">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
+          <span data-t="trackOrder">Track Order</span>
+        </button>
+        <a href="admin.html" class="top-link admin-top" title="Admin Portal">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 14.93V18a1 1 0 0 1-2 0v-1.07A7 7 0 0 1 5.07 11H6a1 1 0 0 1 0-2h-.93A7 7 0 0 1 11 5.07V6a1 1 0 0 1 2 0v-.93A7 7 0 0 1 18.93 11H18a1 1 0 0 1 0 2h.93A7 7 0 0 1 13 16.93z"/></svg>
+          <span>Admin</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Navigation Header -->
+  <header class="main-header">
+    <div class="header-inner">
+      <!-- Logo Branding -->
+      <div class="brand-group" id="logoBtn">
+        <div class="brand-emblem">
+          <span class="emblem-icon">🛍️</span>
+          <span class="emblem-badge">MD</span>
+        </div>
+        <div class="brand-text">
+          <div class="logo-title" id="logo">Aashvi Hub</div>
+          <div class="logo-subtitle">By Dr Mukul Kumar</div>
+        </div>
+      </div>
+
+      <!-- Location Pincode Pill -->
+      <div class="location-pill" id="locationPill">
+        <div class="loc-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+        </div>
+        <div class="loc-text">
+          <span class="loc-label" id="locLabel">Deliver to: Select</span>
+          <span class="loc-val" id="locVal">Tap to set Pincode</span>
+        </div>
+        <button class="loc-edit-btn" aria-label="Change Pincode">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </button>
+      </div>
+
+      <!-- Smart Search Bar -->
+      <div class="search-box">
+        <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <input id="search" class="search-input" data-ph="search" autocomplete="off" placeholder="Search foods, masale, clothes, electric parts, vegetables...">
+        <button id="clearSearch" class="clear-search" hidden aria-label="Clear Search">✕</button>
+      </div>
+
+      <!-- Header Action Controls -->
+      <div class="header-actions">
+        <!-- Language Switcher -->
+        <div class="lang-selector">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+          <select id="lang" aria-label="Select Language"></select>
+        </div>
+
+        <!-- WhatsApp Direct Order Button -->
+        <a href="https://wa.me/918988227729?text=Hello%20Dr%20Mukul%20Kumar,%20I%20would%20like%20to%20place%20an%20order%20directly" target="_blank" rel="noopener" class="btn-whatsapp-order" title="Order via WhatsApp directly from Dr Mukul Kumar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91C2.13 13.66 2.59 15.36 3.45 16.86L2.05 22L7.3 20.62C8.75 21.41 10.38 21.83 12.04 21.83C17.5 21.83 21.95 17.38 21.95 11.92C21.95 9.27 20.92 6.78 19.05 4.91C17.18 3.03 14.69 2 12.04 2M12.05 3.67C14.25 3.67 16.31 4.53 17.87 6.09C19.42 7.65 20.28 9.72 20.28 11.92C20.28 16.46 16.58 20.15 12.04 20.15C10.56 20.15 9.11 19.76 7.85 19L7.55 18.83L4.43 19.65L5.26 16.61L5.06 16.29C4.24 14.99 3.81 13.47 3.81 11.91C3.81 7.37 7.5 3.67 12.05 3.67Z"/></svg>
+          <span data-t="orderOnWhatsapp">WhatsApp Order</span>
+        </a>
+
+        <!-- Cart Button -->
+        <button id="cartBtn" class="cartbtn" aria-label="Shopping Cart">
+          <div class="cart-icon-wrap">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+            <span id="cartCount" class="cart-badge">0</span>
+          </div>
+          <div class="cart-text">
+            <span class="cart-sub" data-t="cart">My Cart</span>
+            <span id="cartTotalHeader" class="cart-price">₹0</span>
+          </div>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ETA Delivery Alert Strip -->
+  <div id="eta" class="eta" hidden></div>
+
+  <!-- Hero & Value Proposition Section -->
+  <section class="hero-section">
+    <div class="hero-container">
+      <div class="hero-content">
+        <div class="hero-tag">
+          <span class="hero-dot"></span>
+          <span data-t="hero_badge">100% Quality Guaranteed • Dr Mukul Kumar</span>
+        </div>
+        <h1 class="hero-title" data-t="hero_title">
+          Foods, Authentic Masale, Clothes, Electric Parts &amp; Fresh Veggies
+        </h1>
+        <p class="hero-desc" data-t="hero_desc">
+          Handmade snacks, freshly blended spices, stylish apparel, reliable electrical fittings, and farm-fresh vegetables dispatched with care across India.
+        </p>
+
+        <div class="hero-actions">
+          <a href="#shopSection" class="btn-hero-primary">
+            <span data-t="hero_btn_shop">Explore Products</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+          </a>
+          <a href="https://wa.me/918988227729?text=Hello%20Dr%20Mukul%20Kumar,%20I%20need%20assistance%20with%20an%20order%20from%20Aashvi%20Hub" target="_blank" rel="noopener" class="btn-hero-secondary">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91C2.13 13.66 2.59 15.36 3.45 16.86L2.05 22L7.3 20.62C8.75 21.41 10.38 21.83 12.04 21.83C17.5 21.83 21.95 17.38 21.95 11.92C21.95 9.27 20.92 6.78 19.05 4.91C17.18 3.03 14.69 2 12.04 2M12.05 3.67C14.25 3.67 16.31 4.53 17.87 6.09C19.42 7.65 20.28 9.72 20.28 11.92C20.28 16.46 16.58 20.15 12.04 20.15C10.56 20.15 9.11 19.76 7.85 19L7.55 18.83L4.43 19.65L5.26 16.61L5.06 16.29C4.24 14.99 3.81 13.47 3.81 11.91C3.81 7.37 7.5 3.67 12.05 3.67Z"/></svg>
+            <span data-t="hero_btn_wa">Consult on WhatsApp</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Trust Pillars Grid -->
+      <div class="hero-trust-grid">
+        <div class="trust-card">
+          <div class="trust-icon">💎</div>
+          <div class="trust-title" data-t="trust_tested">Inspected Quality</div>
+          <div class="trust-sub">Verified by Dr Mukul Kumar</div>
+        </div>
+        <div class="trust-card">
+          <div class="trust-icon">⚡</div>
+          <div class="trust-title" data-t="trust_dispatch">Swift Dispatch</div>
+          <div class="trust-sub">Fast dispatch from central hub</div>
+        </div>
+        <div class="trust-card">
+          <div class="trust-icon">🚚</div>
+          <div class="trust-title" data-t="trust_free_del">Free Delivery</div>
+          <div class="trust-sub">On orders over ₹499</div>
+        </div>
+        <div class="trust-card">
+          <div class="trust-icon">🛡️</div>
+          <div class="trust-title" data-t="trust_genuine">100% Genuine</div>
+          <div class="trust-sub">Tamper-proof sealed authentic packaging</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Store Body -->
+  <main id="shopSection">
+    <!-- Category Strip -->
+    <div class="section-header">
+      <div class="section-title-wrap">
+        <h2 data-t="categories">Explore Categories</h2>
+        <p class="section-subtitle">Click a category to open its subcategories and explore items</p>
+      </div>
+    </div>
+    <section id="cats" class="cats"></section>
+
+    <!-- Subcategories Chips Strip -->
+    <div class="subs-header" id="subsHeader">
+      <span class="subs-header-label">Subcategories:</span>
+      <section id="subs" class="subs"></section>
+    </div>
+
+    <!-- Interactive Filter & Sort Toolbar -->
+    <section class="filters-toolbar">
+      <div class="filter-group-sort">
+        <label for="sortSelect" data-t="filter_sort">Sort By:</label>
+        <select id="sortSelect" class="filter-select">
+          <option value="featured" data-t="sort_featured">Featured</option>
+          <option value="low_high" data-t="sort_low_high">Price: Low to High</option>
+          <option value="high_low" data-t="sort_high_low">Price: High to Low</option>
+          <option value="discount" data-t="sort_discount">Biggest Discount</option>
+        </select>
+      </div>
+
+      <div class="filter-group-price" id="priceChips">
+        <span class="filter-label">Price:</span>
+        <button class="price-chip on" data-price="all" data-t="filter_all">All</button>
+        <button class="price-chip" data-price="under_100" data-t="price_under_100">Under ₹100</button>
+        <button class="price-chip" data-price="100_300" data-t="price_100_300">₹100 - ₹300</button>
+        <button class="price-chip" data-price="300_500" data-t="price_300_500">₹300 - ₹500</button>
+        <button class="price-chip" data-price="above_500" data-t="price_above_500">Above ₹500</button>
+      </div>
+
+      <div class="filter-group-actions">
+        <label class="stock-toggle">
+          <input type="checkbox" id="stockOnly">
+          <span data-t="in_stock_only">In Stock Only</span>
+        </label>
+        <button id="resetFiltersBtn" class="btn-reset-filters" data-t="clear_filters">Reset Filters</button>
+      </div>
+    </section>
+
+    <!-- Products Showcase Header -->
+    <div class="products-header">
+      <div class="products-header-title">
+        <h3 id="currentCatTitle">All Featured Products</h3>
+        <span id="productCountBadge" class="count-badge">0 items</span>
+      </div>
+      <div class="offer-pill" id="couponBannerNotice">
+        <span>🎉 Use Code <strong>WELCOME10</strong> for 10% OFF</span>
+      </div>
+    </div>
+
+    <!-- Product Grid -->
+    <section id="grid" class="grid"></section>
+
+    <!-- Empty State -->
+    <div id="emptyGrid" class="empty-state" hidden>
+      <div class="empty-icon">🔍</div>
+      <h3>No matching products found</h3>
+      <p>Try clearing filters or selecting another category.</p>
+      <button id="resetSearchBtn" class="btn-pill" data-t="clear_filters">Reset Filters</button>
+    </div>
+
+    <!-- Doctor & Owner Profile & Trust Section -->
+    <section class="doctor-profile-section">
+      <div class="doctor-card">
+        <div class="doctor-avatar-wrap">
+          <div class="doctor-avatar">
+            <span class="avatar-sym">🩺</span>
+          </div>
+          <span class="verified-check" title="Verified Store Owner">✓</span>
+        </div>
+        <div class="doctor-info">
+          <div class="doctor-badge">Founder &amp; Director</div>
+          <h3 class="doctor-name">Dr Mukul Kumar</h3>
+          <p class="doctor-desc">
+            "At <strong>Aashvi Hub</strong>, we provide pure, verified foods, traditional stone-ground masale, quality garments, electrical accessories, and farm-fresh vegetables directly to your doorsteps. For any inquiries, bulk orders, or support, feel free to call or WhatsApp me directly."
+          </p>
+          <div class="doctor-contact-actions">
+            <a href="tel:8988227729" class="btn-doc-call">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+              <span>Direct Call: 8988227729</span>
+            </a>
+            <a href="https://wa.me/918988227729?text=Hello%20Dr%20Mukul%20Kumar,%20I%20have%20a%20question%20about%20a%20product%20on%20Aashvi%20Hub" target="_blank" rel="noopener" class="btn-doc-wa">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91C2.13 13.66 2.59 15.36 3.45 16.86L2.05 22L7.3 20.62C8.75 21.41 10.38 21.83 12.04 21.83C17.5 21.83 21.95 17.38 21.95 11.92C21.95 9.27 20.92 6.78 19.05 4.91C17.18 3.03 14.69 2 12.04 2M12.05 3.67C14.25 3.67 16.31 4.53 17.87 6.09C19.42 7.65 20.28 9.72 20.28 11.92C20.28 16.46 16.58 20.15 12.04 20.15C10.56 20.15 9.11 19.76 7.85 19L7.55 18.83L4.43 19.65L5.26 16.61L5.06 16.29C4.24 14.99 3.81 13.47 3.81 11.91C3.81 7.37 7.5 3.67 12.05 3.67Z"/></svg>
+              <span>WhatsApp Dr Mukul Kumar</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Slide-out Cart Drawer -->
+  <div id="cartOverlay" class="cart-overlay" hidden></div>
+  <aside id="cartPanel" class="panel" hidden>
+    <div class="panelhead">
+      <div class="panel-title-group">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+        <h3 data-t="cart">My Cart</h3>
+      </div>
+      <button id="closeCart" class="btn-close" aria-label="Close Cart">✕</button>
+    </div>
+
+    <!-- Free Delivery Progress Tracker -->
+    <div class="free-delivery-tracker" id="freeDeliveryTracker">
+      <div class="tracker-text" id="trackerText">Add items to qualify for FREE Delivery</div>
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="trackerBar" style="width: 0%"></div>
+      </div>
+    </div>
+
+    <!-- Cart Items Container -->
+    <div id="cartItems" class="cart-items-container"></div>
+
+    <!-- Coupon Section -->
+    <div class="coupon-section">
+      <div class="coupon-input-group">
+        <input id="coupon" class="coupon-input" data-ph="coupon" placeholder="Enter coupon (e.g. WELCOME10)" autocomplete="off">
+        <button id="applyBtn" class="coupon-btn" data-t="apply">Apply</button>
+      </div>
+      <div id="couponMsg" class="coupon-msg"></div>
+    </div>
+
+    <!-- Bill Summary -->
+    <div class="bill-summary">
+      <div class="bill-row"><span data-t="subtotal">Item Total</span><b id="sSub">₹0</b></div>
+      <div class="bill-row discount-row"><span data-t="discount">Discount Savings</span><b id="sDisc">-₹0</b></div>
+      <div class="bill-row"><span data-t="delivery">Delivery Fee</span><b id="sFee">₹40</b></div>
+      <div class="bill-row grand-total"><span data-t="total">To Pay</span><b id="sTotal">₹0</b></div>
+    </div>
+
+    <!-- Checkout Form -->
+    <form id="checkout" class="checkout-form">
+      <div class="checkout-heading">Delivery Details</div>
+      <input id="cName" class="form-input" data-ph="name" placeholder="Full Name" required>
+      <input id="cPhone" class="form-input" data-ph="phone" placeholder="Mobile Number (10 digits)" inputmode="numeric" maxlength="10" required>
+      <textarea id="cAddr" class="form-input" data-ph="address" placeholder="Full Street Address, House No, Landmark" rows="2" required></textarea>
+
+      <div class="payment-heading">Select Payment Option</div>
+      <div class="payment-options">
+        <label class="pay-option">
+          <input type="radio" name="pay" value="cod" checked>
+          <div class="pay-option-content">
+            <span class="pay-name" data-t="cod">💵 Cash on Delivery (COD)</span>
+            <span class="pay-sub">Pay at doorstep upon delivery</span>
+          </div>
+        </label>
+
+        <label id="onlineLbl" class="pay-option">
+          <input type="radio" name="pay" value="online">
+          <div class="pay-option-content">
+            <span class="pay-name" data-t="payOnline">💳 Online Payment</span>
+            <span class="pay-sub">Credit/Debit Cards, UPI, NetBanking</span>
+          </div>
+        </label>
+
+        <label class="pay-option whatsapp-pay-option">
+          <input type="radio" name="pay" value="whatsapp">
+          <div class="pay-option-content">
+            <span class="pay-name">💬 Direct WhatsApp Order</span>
+            <span class="pay-sub">Order directly with Dr Mukul Kumar (+91 8988227729)</span>
+          </div>
+        </label>
+      </div>
+
+      <button type="submit" id="placeOrderBtn" class="primary-btn" data-t="placeOrder">
+        <span>Place Order Now</span>
+      </button>
+      <div id="orderMsg" class="order-msg"></div>
+    </form>
+  </aside>
+
+  <!-- Product Detail Modal -->
+  <div id="modal" class="modal" hidden>
+    <div class="modalbox">
+      <button id="closeModal" class="btn-modal-close" aria-label="Close Details">✕</button>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <!-- Pincode Picker Modal -->
+  <div id="pinModal" class="modal" hidden>
+    <div class="modalbox pin-modal-box">
+      <button id="closePinModal" class="btn-modal-close" aria-label="Close">✕</button>
+      <div class="pin-modal-header">
+        <span class="modal-icon">📍</span>
+        <h3 data-t="pincode">Check Delivery &amp; Pincode</h3>
+        <p>Enter your 6-digit delivery pincode to see estimated delivery days across India.</p>
+      </div>
+      <div class="pin-input-group">
+        <input id="modalPinInput" inputmode="numeric" maxlength="6" placeholder="Enter 6-digit Pincode" autocomplete="postal-code">
+        <button id="modalPinCheckBtn" class="btn-pin-submit" data-t="check">Check Availability</button>
+      </div>
+      <div id="modalPinFeedback" class="pin-feedback"></div>
+      <div class="pin-hint">
+        <span>Dispatched safely under supervision of <strong>Dr Mukul Kumar</strong> (8988227729).</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Order Tracking Modal -->
+  <div id="trackModal" class="modal" hidden>
+    <div class="modalbox track-modal-box">
+      <button id="closeTrackModal" class="btn-modal-close" aria-label="Close">✕</button>
+      <div class="track-modal-header">
+        <span class="modal-icon">📦</span>
+        <h3 data-t="trackOrder">Track Your Order Status</h3>
+        <p>Enter your Order ID or registered 10-digit mobile number</p>
+      </div>
+      <div class="track-input-group">
+        <input id="trackInput" placeholder="Order ID (e.g. 1) or Mobile Number" autocomplete="off">
+        <button id="trackSubmitBtn" class="btn-track-submit">Track Status</button>
+      </div>
+      <div id="trackResults" class="track-results-area"></div>
+    </div>
+  </div>
+
+  <!-- Order Success Celebration Modal -->
+  <div id="successModal" class="modal" hidden>
+    <div class="modalbox success-modal-box">
+      <div class="success-icon-wrap">
+        <div class="success-check">✓</div>
+      </div>
+      <h3 class="success-title">Order Successfully Placed!</h3>
+      <p id="successOrderId" class="success-order-id">Order ID: #100</p>
+      <div class="success-details-card" id="successDetailsCard"></div>
+      <div class="success-actions">
+        <button id="successWhatsappBtn" class="btn-success-wa">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91C2.13 13.66 2.59 15.36 3.45 16.86L2.05 22L7.3 20.62C8.75 21.41 10.38 21.83 12.04 21.83C17.5 21.83 21.95 17.38 21.95 11.92C21.95 9.27 20.92 6.78 19.05 4.91C17.18 3.03 14.69 2 12.04 2M12.05 3.67C14.25 3.67 16.31 4.53 17.87 6.09C19.42 7.65 20.28 9.72 20.28 11.92C20.28 16.46 16.58 20.15 12.04 20.15C10.56 20.15 9.11 19.76 7.85 19L7.55 18.83L4.43 19.65L5.26 16.61L5.06 16.29C4.24 14.99 3.81 13.47 3.81 11.91C3.81 7.37 7.5 3.67 12.05 3.67Z"/></svg>
+          <span>Share Order with Dr Mukul Kumar</span>
+        </button>
+        <button id="closeSuccessBtn" class="btn-success-continue">Continue Shopping</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Floating WhatsApp Quick Support Widget -->
+  <div class="floating-wa-container">
+    <a href="https://wa.me/918988227729?text=Hello%20Dr%20Mukul%20Kumar,%20I%20have%20an%20inquiry%20regarding%20Aashvi%20Hub" target="_blank" rel="noopener" class="floating-wa-btn" aria-label="Chat with Dr Mukul Kumar on WhatsApp">
+      <div class="wa-btn-inner">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="#ffffff"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91C2.13 13.66 2.59 15.36 3.45 16.86L2.05 22L7.3 20.62C8.75 21.41 10.38 21.83 12.04 21.83C17.5 21.83 21.95 17.38 21.95 11.92C21.95 9.27 20.92 6.78 19.05 4.91C17.18 3.03 14.69 2 12.04 2M12.05 3.67C14.25 3.67 16.31 4.53 17.87 6.09C19.42 7.65 20.28 9.72 20.28 11.92C20.28 16.46 16.58 20.15 12.04 20.15C10.56 20.15 9.11 19.76 7.85 19L7.55 18.83L4.43 19.65L5.26 16.61L5.06 16.29C4.24 14.99 3.81 13.47 3.81 11.91C3.81 7.37 7.5 3.67 12.05 3.67Z"/></svg>
+      </div>
+      <div class="wa-tooltip">
+        <span class="wa-tooltip-title">Chat with Dr Mukul Kumar</span>
+        <span class="wa-tooltip-sub">Online • Direct Helpline</span>
+      </div>
+    </a>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+  <!-- Footer -->
+  <footer class="main-footer">
+    <div class="footer-inner">
+      <div class="footer-col brand-col">
+        <div class="brand-group footer-brand">
+          <div class="brand-emblem">
+            <span class="emblem-icon">🛍️</span>
+          </div>
+          <div class="brand-text">
+            <div class="logo-title">Aashvi Hub</div>
+            <div class="logo-subtitle">By Dr Mukul Kumar</div>
+          </div>
+        </div>
+        <p class="footer-desc">
+          India's trusted quick-commerce store for foods, artisan chocolates, authentic spices, apparel, electric parts and fresh vegetables.
+        </p>
+        <div class="footer-owner-card">
+          <div class="f-owner-name">Dr Mukul Kumar</div>
+          <div class="f-owner-title">Founder &amp; Director</div>
+          <div class="f-owner-phone">📞 Helpline: <a href="tel:8988227729">+91 8988227729</a></div>
+        </div>
+      </div>
+
+      <div class="footer-col">
+        <h4 class="footer-head">Categories</h4>
+        <ul class="footer-links">
+          <li><a href="#shopSection">Foods (Jams, Biscuits, Chocolates)</a></li>
+          <li><a href="#shopSection">Masale &amp; Spices (Chai, Chaat, Garam)</a></li>
+          <li><a href="#shopSection">Clothes (Men, Women, Boys, Girls)</a></li>
+          <li><a href="#shopSection">Electric Parts &amp; Accessories</a></li>
+          <li><a href="#shopSection">Fresh Vegetables</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4 class="footer-head">Direct Owner Contact</h4>
+        <ul class="footer-contact-list">
+          <li><strong>Owner:</strong> Dr Mukul Kumar</li>
+          <li><strong>Call:</strong> <a href="tel:8988227729">+91 8988227729</a></li>
+          <li><strong>WhatsApp:</strong> <a href="https://wa.me/918988227729" target="_blank" rel="noopener">+91 8988227729</a></li>
+          <li><strong>Email:</strong> <a href="mailto:support@aashvihub.com">support@aashvihub.com</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4 class="footer-head">Service Promises</h4>
+        <div class="footer-badges">
+          <span class="f-badge">⚡ All India Dispatch</span>
+          <span class="f-badge">🔒 100% Secure Payments</span>
+          <span class="f-badge">💵 Cash on Delivery</span>
+          <span class="f-badge">✨ Hand-Picked Quality</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <div class="footer-bottom-inner">
+        <p>© 2026 Aashvi Hub. Directed &amp; Managed by <strong>Dr Mukul Kumar</strong> (Mob: 8988227729).</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/i18n.js"></script>
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

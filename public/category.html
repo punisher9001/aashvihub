@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Aashvi Hub – Category Details</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header>
+    <div class="header-left">
+      <a class="header-logo" href="index.html">Aashvi Hub</a>
+    </div>
+    <nav>
+      <a class="btn-site" href="index.html">Home</a>
+      <a class="btn-site" href="explore.html">Explore</a>
+      <a class="btn-site" href="wishlist.html">Wishlist</a>
+    </nav>
+  </header>
+
+  <main class="container" style="padding:24px;">
+    <h1 id="cat-title">Category</h1>
+    <div id="product-list" class="grid" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(200px,1fr));gap:16px; margin-top:24px;">
+      <!-- Products will be injected here -->
+    </div>
+  </main>
+
+  <script>
+    // Get category id from query string
+    const params = new URLSearchParams(window.location.search);
+    const catId = params.get('cat');
+    if (!catId) {
+      document.getElementById('cat-title').innerText = 'Category not found';
+    } else {
+      // Fetch category details and its products – adjust endpoint as needed
+      async function loadCategory() {
+        try {
+          const catResp = await fetch(`/api/categories?select=id,name&eq.id=${catId}`);
+          const catData = await catResp.json();
+          const cat = catData[0] || {};
+          document.getElementById('cat-title').innerText = cat.name || 'Category';
+
+          const prodResp = await fetch(`/api/products?category_id=eq.${catId}`);
+          const products = await prodResp.json();
+          const container = document.getElementById('product-list');
+          products.forEach(p => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.style = 'padding:16px; border:1px solid var(--border); border-radius:var(--radius); background:var(--card);';
+            card.innerHTML = `
+              <strong>${p.name}</strong><br>
+              <span>₹${p.price}</span><br>
+              <button onclick="addToWishlist(${p.id})">Add to Wishlist</button>
+            `;
+            container.appendChild(card);
+          });
+        } catch (e) {
+          console.error('Error loading category', e);
+        }
+      }
+      loadCategory();
+    }
+
+    function addToWishlist(productId) {
+      // Simple client‑side placeholder – you can replace with an API call later
+      alert('Product ' + productId + ' added to wishlist (placeholder)');
+    }
+  </script>
+</body>
+</html>
+

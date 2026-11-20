@@ -1,53 +1,34 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Aashvi Hub – Explore Categories</title>
-  <link rel="stylesheet" href="css/style.css">
+    <meta charset="UTF-8">
+    <title>Explore Categories</title>
+    <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-  <header>
-    <div class="header-left">
-      <a class="header-logo" href="index.html">Aashvi Hub</a>
-    </div>
-    <nav>
-      <a class="btn-site" href="index.html">Home</a>
-      <a class="btn-site" href="explore.html">Explore</a>
-      <a class="btn-site" href="wishlist.html">Wishlist</a>
-    </nav>
-  </header>
+    <h1>Explore</h1>
+    <div id="categories"></div>
 
-  <main class="container" style="padding:24px;">
-    <h1>Explore Categories</h1>
-    <div id="category-list" class="grid" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(200px,1fr));gap:16px; margin-top:24px;">
-      <!-- Categories will be injected here -->
-    </div>
-  </main>
+    <script>
+// Fetch categories from Supabase (or any API endpoint you have)
+async function loadCategories() {
+    try {
+        const res = await fetch('/api/categories');
+        const data = await res.json();
 
-  <script>
-    // Simple fetch to your Supabase endpoint (adjust URL as needed)
-    async function loadCategories() {
-      try {
-        const resp = await fetch('/api/categories'); // placeholder route
-        if (!resp.ok) throw new Error('Failed to fetch');
-        const categories = await resp.json();
-        const container = document.getElementById('category-list');
-        categories.forEach(cat => {
-          const card = document.createElement('a');
-          card.href = `category.html?cat=${encodeURIComponent(cat.id)}`;
-          card.className = 'card';
-          card.style = 'text-decoration:none; padding:16px; border:1px solid var(--border); border-radius:var(--radius); background:var(--card); display:flex; flex-direction:column; align-items:center;';
-          card.innerHTML = `<strong>${cat.name}</strong>`;
-          container.appendChild(card);
+        const container = document.getElementById('categories');
+        data.forEach(cat => {
+            const a = document.createElement('a');
+            a.href = `/category.html?cat=${encodeURIComponent(cat.id)}`;
+            a.textContent = cat.name;
+            a.className = 'explore-category';
+            container.appendChild(a);
         });
-      } catch (e) {
-        console.error('Error loading categories', e);
-        document.getElementById('category-list').innerText = 'Unable to load categories.';
-      }
+    } catch (e) {
+        console.error('Failed to load categories', e);
     }
-    loadCategories();
-  </script>
+}
+loadCategories();
+    </script>
 </body>
 </html>
-

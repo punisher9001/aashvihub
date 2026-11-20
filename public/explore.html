@@ -1,34 +1,42 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <title>Explore Categories</title>
-    <link rel="stylesheet" href="/css/style.css">
+  <meta charset="UTF-8">
+  <title>Explore Categories</title>
+  <link rel="stylesheet" href="/css/style.css">
 </head>
+
 <body>
-    <h1>Explore</h1>
-    <div id="categories"></div>
+  <h1>Explore</h1>
+  <div id="categories"></div>
 
-    <script>
-// Fetch categories from Supabase (or any API endpoint you have)
-async function loadCategories() {
-    try {
+  <script>
+    // Fetch categories from Supabase (or any API endpoint you have)
+    async function loadCategories() {
+      try {
         const res = await fetch('/api/categories');
-        const data = await res.json();
-
+        // If API fails, show fallback categories
+      if (!data || data.length === 0) {
+        data = [
+          { id: 'fallback1', name: 'Sample Category 1' },
+          { id: 'fallback2', name: 'Sample Category 2' }
+        ];
+      }
         const container = document.getElementById('categories');
         data.forEach(cat => {
-            const a = document.createElement('a');
-            a.href = `/category.html?cat=${encodeURIComponent(cat.id)}`;
-            a.textContent = cat.name;
-            a.className = 'explore-category';
-            container.appendChild(a);
+          const a = document.createElement('a');
+          a.href = `/category.html?cat=${encodeURIComponent(cat.id)}`;
+          a.textContent = cat.name;
+          a.className = 'explore-category';
+          container.appendChild(a);
         });
-    } catch (e) {
+      } catch (e) {
         console.error('Failed to load categories', e);
+      }
     }
-}
-loadCategories();
-    </script>
+    loadCategories();
+  </script>
 </body>
+
 </html>

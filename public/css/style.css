@@ -80,13 +80,20 @@ body[data-theme="newyear"] {
 }
 
 /* Base Resets */
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
-[hidden], .modal[hidden], .panel[hidden], .eta[hidden], .banner[hidden], .cart-overlay[hidden] {
+[hidden],
+.modal[hidden],
+.panel[hidden],
+.eta[hidden],
+.banner[hidden],
+.cart-overlay[hidden] {
   display: none !important;
 }
 
@@ -114,7 +121,10 @@ a {
   text-decoration: none;
 }
 
-input, button, select, textarea {
+input,
+button,
+select,
+textarea {
   font-family: inherit;
   font-size: inherit;
   color: inherit;
@@ -1675,7 +1685,8 @@ body[dir="rtl"] .panel {
   gap: 10px;
 }
 
-.checkout-heading, .payment-heading {
+.checkout-heading,
+.payment-heading {
   font-size: 13px;
   font-weight: 800;
   text-transform: uppercase;
@@ -2265,7 +2276,8 @@ body[dir="rtl"] .toast-container {
   letter-spacing: -0.2px;
 }
 
-.footer-links, .footer-contact-list {
+.footer-links,
+.footer-contact-list {
   list-style: none;
   display: flex;
   flex-direction: column;
@@ -2309,33 +2321,69 @@ body[dir="rtl"] .toast-container {
 
 /* Animations */
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes slideInRight {
-  from { transform: translateX(100%); }
-  to { transform: translateX(0); }
+  from {
+    transform: translateX(100%);
+  }
+
+  to {
+    transform: translateX(0);
+  }
 }
 
 @keyframes slideInLeft {
-  from { transform: translateX(-100%); }
-  to { transform: translateX(0); }
+  from {
+    transform: translateX(-100%);
+  }
+
+  to {
+    transform: translateX(0);
+  }
 }
 
 @keyframes scaleUp {
-  from { opacity: 0; transform: scale(0.94); }
-  to { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 @keyframes slideToast {
-  from { opacity: 0; transform: translateY(-12px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes pulseRipple {
-  0% { transform: scale(1); opacity: 0.8; }
-  100% { transform: scale(1.4); opacity: 0; }
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+
+  100% {
+    transform: scale(1.4);
+    opacity: 0;
+  }
 }
 
 /* Festive Fall Animation */
@@ -2355,7 +2403,9 @@ body[dir="rtl"] .toast-container {
 }
 
 @keyframes fallAnimation {
-  to { transform: translateY(110vh) rotate(360deg); }
+  to {
+    transform: translateY(110vh) rotate(360deg);
+  }
 }
 
 /* Responsive Media Queries */
@@ -2470,4 +2520,155 @@ body[dir="rtl"] .toast-container {
   .hero-actions {
     flex-direction: column;
   }
+}
+
+/* Hide old WhatsApp / Call sections and Doctor info */
+.whatsapp-btn,
+.call-btn,
+.doctor-info {
+  display: none;
+}
+
+/* Login / Signup form styling */
+#login {
+  max-width: 420px;
+  margin: 80px auto;
+  background: var(--card);
+  padding: 30px 24px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-md);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+#login input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+#login button {
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 12px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+#login button:hover {
+  background: var(--primary-hover);
+}
+
+/* ==== मौजूदा स्टाइल्स (अगर कोई है) ==== */
+
+/* ---- Admin Page ---- */
+.admin-container {
+  max-width: 400px;
+  margin: 60px auto;
+  padding: 30px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #fafafa;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.admin-container h2 {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.admin-container input {
+  width: 100%;
+  padding: 10px;
+  margin: 8px 0;
+  box-sizing: border-box;
+}
+
+.admin-container button {
+  width: 100%;
+  padding: 10px;
+  background: #0066ff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.admin-container button:hover {
+  background: #004ecc;
+}
+
+.message {
+  margin-top: 15px;
+  text-align: center;
+}
+
+/* ---- Hide old WhatsApp / Call sections ---- */
+.doctor-section,
+.whatsapp-section,
+.call-section {
+  display: none !important;
+}
+
+/* ---- Explore page ---- */
+.explore-category {
+  display: inline-block;
+  margin: 10px;
+  padding: 12px 20px;
+  background: #e0f0ff;
+  border-radius: 5px;
+  cursor: pointer;
+  text-decoration: none;
+  color: #0066ff;
+}
+
+.explore-category:hover {
+  background: #c0e0ff;
+}
+
+/* ---- Category page ---- */
+.product-card {
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 15px;
+  margin: 10px 0;
+}
+
+.product-card button {
+  margin-top: 10px;
+  background: #ff6600;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.product-card button:hover {
+  background: #e65500;
+}
+
+/* ---- Wishlist page ---- */
+.wishlist-item {
+  border-bottom: 1px solid #ccc;
+  padding: 10px 0;
+}
+
+.wishlist-item button {
+  background: #c00;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.wishlist-item button:hover {
+  background: #a00;
 }

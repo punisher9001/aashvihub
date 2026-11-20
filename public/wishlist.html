@@ -1,57 +1,52 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Aashvi Hub – Wishlist</title>
-  <link rel="stylesheet" href="css/style.css">
+    <meta charset="UTF-8">
+    <title>My Wishlist</title>
+    <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-  <header>
-    <div class="header-left">
-      <a class="header-logo" href="index.html">Aashvi Hub</a>
-    </div>
-    <nav>
-      <a class="btn-site" href="index.html">Home</a>
-      <a class="btn-site" href="explore.html">Explore</a>
-      <a class="btn-site" href="wishlist.html">Wishlist</a>
-    </nav>
-  </header>
+    <h1>My Wishlist</h1>
+    <div id="wishlist"></div>
 
-  <main class="container" style="padding:24px;">
-    <h1>Your Wishlist</h1>
-    <div id="wishlist-items" class="grid" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(200px,1fr));gap:16px; margin-top:24px;">
-      <!-- Wishlist items will be injected here -->
-    </div>
-  </main>
+    <script>
+function renderWishlist() {
+    const list = JSON.parse(localStorage.getItem('wishlist') || '[]');
+    const container = document.getElementById('wishlist');
+    container.innerHTML = '';
 
-  <script>
-    // Simple client‑side wishlist using localStorage
-    function loadWishlist() {
-      const list = JSON.parse(localStorage.getItem('wishlist') || '[]');
-      const container = document.getElementById('wishlist-items');
-      if (list.length === 0) {
-        container.innerHTML = '<p>Wishlist empty. Add items from product pages.</p>';
+    if (list.length === 0) {
+        container.textContent = 'Your wishlist is empty.';
         return;
-      }
-      list.forEach(item => {
-        const card = document.createElement('div');
-        card.className = 'card';
-        card.style = 'padding:16px; border:1px solid var(--border); border-radius:var(--radius); background:var(--card);';
-        card.innerHTML = `<strong>${item.name}</strong><br>₹${item.price}<br><button onclick="removeFromWishlist(${item.id})">Remove</button>`;
-        container.appendChild(card);
-      });
     }
 
-    function removeFromWishlist(id) {
-      let list = JSON.parse(localStorage.getItem('wishlist') || '[]');
-      list = list.filter(i => i.id !== id);
-      localStorage.setItem('wishlist', JSON.stringify(list));
-      location.reload();
-    }
+    list.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'wishlist-item';
+        div.innerHTML = `
+            <span>${item.name}</span>
+            <button data-id="${item.id}">Remove</button>
+        `;
+        container.appendChild(div);
+    });
 
-    loadWishlist();
-  </script>
+    container.addEventListener('click', (e) => {
+        if (e.target.tagName === 'BUTTON') {
+            const id = e.target.dataset.id;
+            removeFromWishlist(id);
+        }
+    });
+}
+
+function removeFromWishlist(id) {
+    let list = JSON.parse(localStorage.getItem('wishlist') || '[]');
+    list = list.filter(i => i.id !== id);
+    localStorage.setItem('wishlist', JSON.stringify(list));
+    renderWishlist();
+}
+
+// Initial render
+renderWishlist();
+    </script>
 </body>
 </html>
-

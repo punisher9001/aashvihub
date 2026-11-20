@@ -84,10 +84,8 @@ app.post('/api/admin/signup', async (req, res) => {
    simply delete/disable them. They are not needed any more.
 */
 
-// Redirect legacy pages to home page
-app.get(['/explore.html','/category.html','/wishlist.html'], (req, res) => {
-  res.sendFile(require('path').join(__dirname, 'public', 'index.html'));
-});
+// No legacy redirects – static files are served automatically by Express
+
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

@@ -1,71 +1,73 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Aashvi Hub – Category Details</title>
-  <link rel="stylesheet" href="css/style.css">
+    <meta charset="UTF-8">
+    <title>Category Products</title>
+    <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-  <header>
-    <div class="header-left">
-      <a class="header-logo" href="index.html">Aashvi Hub</a>
-    </div>
-    <nav>
-      <a class="btn-site" href="index.html">Home</a>
-      <a class="btn-site" href="explore.html">Explore</a>
-      <a class="btn-site" href="wishlist.html">Wishlist</a>
-    </nav>
-  </header>
+    <h1 id="catTitle">Category</h1>
+    <div id="products"></div>
 
-  <main class="container" style="padding:24px;">
-    <h1 id="cat-title">Category</h1>
-    <div id="product-list" class="grid" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(200px,1fr));gap:16px; margin-top:24px;">
-      <!-- Products will be injected here -->
-    </div>
-  </main>
-
-  <script>
-    // Get category id from query string
+    <script>
+// Get category id from query string
+function getQueryParam(name) {
     const params = new URLSearchParams(window.location.search);
-    const catId = params.get('cat');
-    if (!catId) {
-      document.getElementById('cat-title').innerText = 'Category not found';
-    } else {
-      // Fetch category details and its products – adjust endpoint as needed
-      async function loadCategory() {
-        try {
-          const catResp = await fetch(`/api/categories?select=id,name&eq.id=${catId}`);
-          const catData = await catResp.json();
-          const cat = catData[0] || {};
-          document.getElementById('cat-title').innerText = cat.name || 'Category';
+    return params.get(name);
+}
 
-          const prodResp = await fetch(`/api/products?category_id=eq.${catId}`);
-          const products = await prodResp.json();
-          const container = document.getElementById('product-list');
-          products.forEach(p => {
-            const card = document.createElement('div');
-            card.className = 'card';
-            card.style = 'padding:16px; border:1px solid var(--border); border-radius:var(--radius); background:var(--card);';
-            card.innerHTML = `
-              <strong>${p.name}</strong><br>
-              <span>₹${p.price}</span><br>
-              <button onclick="addToWishlist(${p.id})">Add to Wishlist</button>
+async function loadProducts(catId) {
+    try {
+        const res = await fetch(`/api/products?category=${catId}`);
+        const data = await res.json();
+
+        const container = document.getElementById('products');
+        data.forEach(prod => {
+            const div = document.createElement('div');
+            div.className = 'product-card';
+            div.innerHTML = `
+                <h3>${prod.name}</h3>
+                <p>${prod.description || ''}</p>
+                <p>Price: $${prod.price}</p>
+                <button data-id="${prod.id}" data-name="${prod.name}">Add to Wishlist</button>
             `;
-            container.appendChild(card);
-          });
-        } catch (e) {
-          console.error('Error loading category', e);
-        }
-      }
-      loadCategory();
-    }
+            container.appendChild(div);
+        });
 
-    function addToWishlist(productId) {
-      // Simple client‑side placeholder – you can replace with an API call later
-      alert('Product ' + productId + ' added to wishlist (placeholder)');
+        // Wishlist click handler
+        container.addEventListener('click', (e) => {
+            if (e.target.tagName === 'BUTTON') {
+                const id = e.target.dataset.id;
+                const name = e.target.dataset.name;
+                addToWishlist({ id, name });
+                alert(name + ' added to wishlist!');
+            }
+        });
+    } catch (e) {
+        console.error('Failed to load products', e);
     }
-  </script>
+}
+
+// Simple localStorage wishlist
+function addToWishlist(item) {
+    const list = JSON.parse(localStorage.getItem('wishlist') || '[]');
+    if (!list.find(i => i.id === item.id)) {
+        list.push(item);
+        localStorage.setItem('wishlist', JSON.stringify(list));
+    }
+}
+
+// Set title & load
+const catId = getQueryParam('cat');
+if (catId) {
+    loadProducts(catId);
+    // Optional: fetch cat name for heading
+    fetch(`/api/categories/${catId}`)
+        .then(r => r.json())
+        .then(cat => {
+            document.getElementById('catTitle').textContent = cat.name;
+        });
+}
+    </script>
 </body>
 </html>
-

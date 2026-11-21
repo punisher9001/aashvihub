@@ -626,56 +626,93 @@
 
   <!-- Modal: Add Product -->
   <div id="addProductModal" class="modal-backdrop">
-    <div class="modal-box">
+    <div class="modal-box" style="max-width:580px; max-height:92vh; overflow-y:auto;">
       <div class="modal-header">
-        <div class="modal-title">Add New Product</div>
+        <div class="modal-title" id="productModalTitle">Add New Product</div>
         <button class="modal-close" id="closeAddProductBtn">✕</button>
       </div>
       <form id="addProductForm">
+        <input type="hidden" id="editProductId" value="">
         <div class="form-group">
           <label>Product Name *</label>
           <input type="text" id="newProdName" class="form-control" required placeholder="e.g. Masala Chai Special Blend">
         </div>
-        <div class="form-group">
-          <label>Category *</label>
-          <select id="newProdCategory" class="form-control" required>
-            <option value="1">Foods</option>
-            <option value="2">Masale &amp; Spices</option>
-            <option value="3">Clothes</option>
-            <option value="4">Electric Parts</option>
-            <option value="5">Fresh Vegetables</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Subcategory *</label>
-          <select id="newProdSubcategory" class="form-control" required>
-            <option value="">-- Select Subcategory --</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Sizes / Pack Variants & Stock Matrix</label>
-          <div id="variantsContainer" style="display:flex; flex-direction:column; gap:8px; margin-bottom:8px;"></div>
-          <button type="button" id="addVariantRowBtn" class="btn btn-secondary btn-sm" style="width:auto;">+ Add Size / Variant (e.g. S, M, L, 250g, 500g)</button>
-        </div>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
           <div class="form-group">
-            <label>Sale Price (₹) *</label>
+            <label>Category *</label>
+            <select id="newProdCategory" class="form-control" required>
+              <option value="">-- Select Category --</option>
+              <option value="1">Foods</option>
+              <option value="2">Masale &amp; Spices</option>
+              <option value="3">Clothes</option>
+              <option value="4">Electric Parts</option>
+              <option value="5">Fresh Vegetables</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Subcategory *</label>
+            <select id="newProdSubcategory" class="form-control" required>
+              <option value="">-- Select Subcategory --</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Category-Aware Quick Presets -->
+        <div class="form-group" style="background:#f1f5f9; padding:12px; border-radius:10px; border:1px solid #e2e8f0;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <label style="font-weight:700; font-size:12.5px; color:#1e293b; margin:0;">⚡ Quick Add Presets:</label>
+            <span id="presetCategoryHint" style="font-size:11.5px; color:var(--primary); font-weight:600;">(Select Category to highlight presets)</span>
+          </div>
+          <div style="margin-bottom:8px;">
+            <span style="font-size:11.5px; font-weight:700; color:#475569; display:block; margin-bottom:4px;">👕 Clothing Sizes:</span>
+            <div id="clothingPresets" style="display:flex; gap:6px; flex-wrap:wrap;">
+              <button type="button" class="btn btn-secondary btn-sm preset-btn" data-preset="XS">XS</button>
+              <button type="button" class="btn btn-secondary btn-sm preset-btn" data-preset="S">S</button>
+              <button type="button" class="btn btn-secondary btn-sm preset-btn" data-preset="M">M</button>
+              <button type="button" class="btn btn-secondary btn-sm preset-btn" data-preset="L">L</button>
+              <button type="button" class="btn btn-secondary btn-sm preset-btn" data-preset="XL">XL</button>
+              <button type="button" class="btn btn-secondary btn-sm preset-btn" data-preset="XXL">XXL</button>
+            </div>
+          </div>
+          <div>
+            <span style="font-size:11.5px; font-weight:700; color:#475569; display:block; margin-bottom:4px;">🍱 Food / Veg Weights &amp; Packs:</span>
+            <div id="foodPresets" style="display:flex; gap:6px; flex-wrap:wrap;">
+              <button type="button" class="btn btn-secondary btn-sm preset-btn" data-preset="100g">100g</button>
+              <button type="button" class="btn btn-secondary btn-sm preset-btn" data-preset="250g">250g</button>
+              <button type="button" class="btn btn-secondary btn-sm preset-btn" data-preset="400g">400g</button>
+              <button type="button" class="btn btn-secondary btn-sm preset-btn" data-preset="500g">500g</button>
+              <button type="button" class="btn btn-secondary btn-sm preset-btn" data-preset="1kg">1kg</button>
+              <button type="button" class="btn btn-secondary btn-sm preset-btn" data-preset="2kg">2kg</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Variant Matrix Rows -->
+        <div class="form-group">
+          <label style="font-weight:700; font-size:13px; display:flex; justify-content:space-between;">
+            <span>📦 Size / Weight Variants &amp; Stock Matrix *</span>
+            <span style="font-size:11.5px; color:#64748b; font-weight:normal;">(Name • Custom Price • Stock Qty)</span>
+          </label>
+          <div id="variantsContainer" style="display:flex; flex-direction:column; gap:8px; margin-bottom:8px;">
+            <!-- Rows rendered dynamically -->
+          </div>
+          <button type="button" id="addVariantRowBtn" class="btn btn-secondary btn-sm" style="width:auto;">+ Add Custom Variant</button>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <div class="form-group">
+            <label>Base Sale Price (₹) *</label>
             <input type="number" id="newProdPrice" class="form-control" required placeholder="149">
           </div>
           <div class="form-group">
-            <label>MRP (₹)</label>
+            <label>Base MRP (₹)</label>
             <input type="number" id="newProdMrp" class="form-control" placeholder="199">
           </div>
         </div>
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-          <div class="form-group">
-            <label>Stock Qty</label>
-            <input type="number" id="newProdStock" class="form-control" value="50">
-          </div>
-          <div class="form-group">
-            <label>Unit / Pack Size</label>
-            <input type="text" id="newProdUnit" class="form-control" value="1 Pack">
-          </div>
+
+        <div class="form-group">
+          <label>Unit / Display Subtitle</label>
+          <input type="text" id="newProdUnit" class="form-control" placeholder="e.g. 500g pack, Cotton, Standard">
         </div>
         <div class="form-group">
           <label>Image URL</label>
@@ -685,7 +722,7 @@
           <label>Description</label>
           <textarea id="newProdDesc" class="form-control" rows="2" placeholder="Freshly packed product..."></textarea>
         </div>
-        <button type="submit" class="btn btn-primary">Create Product</button>
+        <button type="submit" class="btn btn-primary" id="saveProductBtn">Save Product</button>
       </form>
     </div>
   </div>

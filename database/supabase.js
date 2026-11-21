@@ -1,7 +1,3 @@
-/**
- * Aashvi Hub - Supabase Cloud Database Client
- * Uses native fetch (Node 18+) against Supabase PostgREST API.
- */
 
 const SUPABASE_URL = (process.env.SUPABASE_URL || '').replace(/\/+$/, '');
 const SUPABASE_KEY = process.env.SUPABASE_KEY || process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '';

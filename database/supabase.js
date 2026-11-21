@@ -81,6 +81,70 @@ const supabaseDb = {
     }
   },
 
+  // Helper: Parse Size/Variant & Stock Matrix safely from existing product details
+  parseProductVariants(p) {
+    if (!p) return null;
+    let variants = [];
+    let detailsText = p.details || '';
+    let categoryId = p.category_id || null;
+
+    if (typeof p.details === 'string' && p.details.trim().startsWith('{')) {
+      try {
+        const parsed = JSON.parse(p.details);
+        if (parsed && typeof parsed === 'object') {
+          if (Array.isArray(parsed.variants)) variants = parsed.variants;
+          if (parsed.detailsText !== undefined) detailsText = parsed.detailsText;
+          if (parsed.category_id !== undefined) categoryId = parsed.category_id;
+        }
+      } catch (e) {
+        // Fallback to raw string
+      }
+    } else if (p.variants && Array.isArray(p.variants)) {
+      variants = p.variants;
+    }
+
+    // Default variant if none explicitly defined
+    if (!variants || variants.length === 0) {
+      variants = [{
+        name: p.unit || 'Standard',
+        stock: Math.max(0, Number(p.stock || 0))
+      }];
+    }
+
+    // Ensure valid stock integers
+    variants = variants.map(v => ({
+      name: String(v.name || 'Standard').trim(),
+      stock: Math.max(0, parseInt(v.stock, 10) || 0)
+    }));
+
+    const totalStock = variants.reduce((sum, v) => sum + v.stock, 0);
+
+    return {
+      ...p,
+      details: detailsText,
+      category_id: categoryId,
+      variants,
+      stock: totalStock,
+      available: Boolean(p.is_available && totalStock > 0),
+      mrp: Number(p.mrp || p.price || 0),
+      price: Number(p.price || 0)
+    };
+  },
+
+  // Helper: Encode Variant Matrix & Category safely into existing details text field (zero SQL migration needed)
+  encodeProductDetails(detailsText, variants, categoryId) {
+    const cleanVariants = Array.isArray(variants) ? variants.map(v => ({
+      name: String(v.name || 'Standard').trim(),
+      stock: Math.max(0, parseInt(v.stock, 10) || 0)
+    })).filter(v => v.name) : [];
+
+    return JSON.stringify({
+      detailsText: String(detailsText || '').trim(),
+      variants: cleanVariants,
+      category_id: categoryId ? Number(categoryId) : null
+    });
+  },
+
   async getProducts({ cat, sub, q } = {}) {
     try {
       let query = '/products?select=*&is_available=eq.true';
@@ -96,14 +160,9 @@ const supabaseDb = {
         const clean = encodeURIComponent(`*${q}*`);
         query += `&or=(name.ilike.${clean},description.ilike.${clean})`;
       }
-      query += '&order=id.asc&limit=200';
+      query += '&order=id.asc&limit=250';
       const rows = await sbFetch(query);
-      return (rows || []).map(p => ({
-        ...p,
-        available: Boolean(p.is_available && p.stock > 0),
-        mrp: Number(p.mrp),
-        price: Number(p.price)
-      }));
+      return (rows || []).map(p => this.parseProductVariants(p));
     } catch (e) {
       console.error('[Supabase] getProducts error:', e.message);
       return null;
@@ -112,7 +171,117 @@ const supabaseDb = {
 
   async getProductById(id) {
     const rows = await sbFetch(`/products?select=*&id=eq.${encodeURIComponent(id)}&limit=1`);
-    return rows && rows[0] ? rows[0] : null;
+    return rows && rows[0] ? this.parseProductVariants(rows[0]) : null;
+  },
+
+  // Product CRUD in Supabase with Variant Support
+  async createProduct(prod) {
+    const cleanVariants = Array.isArray(prod.variants) && prod.variants.length > 0
+      ? prod.variants.map(v => ({ name: String(v.name || 'Standard').trim(), stock: Math.max(0, parseInt(v.stock, 10) || 0) }))
+      : [{ name: prod.unit || 'Standard', stock: Math.max(0, parseInt(prod.stock, 10) || 50) }];
+
+    const totalStock = cleanVariants.reduce((s, v) => s + v.stock, 0);
+    const encodedDetails = this.encodeProductDetails(prod.details || prod.description, cleanVariants, prod.category_id);
+
+    const body = {
+      subcategory_id: Number(prod.subcategory_id) || 1,
+      name: String(prod.name).trim(),
+      description: String(prod.description || '').trim(),
+      details: encodedDetails,
+      image: String(prod.image || 'https://images.unsplash.com/photo-1549007994-cb92caebd54b?auto=format&fit=crop&w=500&q=80').trim(),
+      mrp: Number(prod.mrp || prod.price),
+      price: Number(prod.price),
+      unit: String(prod.unit || '1 unit').trim(),
+      stock: totalStock,
+      is_available: totalStock > 0
+    };
+
+    const inserted = await sbFetch('/products', {
+      method: 'POST',
+      body
+    });
+    const res = Array.isArray(inserted) ? inserted[0] : inserted;
+    return this.parseProductVariants(res || body);
+  },
+
+  async updateProduct(id, prod) {
+    let encodedDetails = undefined;
+    let totalStock = prod.stock !== undefined ? Number(prod.stock) : undefined;
+
+    if (Array.isArray(prod.variants)) {
+      const cleanVariants = prod.variants.map(v => ({
+        name: String(v.name || 'Standard').trim(),
+        stock: Math.max(0, parseInt(v.stock, 10) || 0)
+      }));
+      totalStock = cleanVariants.reduce((s, v) => s + v.stock, 0);
+      encodedDetails = this.encodeProductDetails(prod.details || prod.description, cleanVariants, prod.category_id);
+    }
+
+    const body = {};
+    if (prod.name) body.name = String(prod.name).trim();
+    if (prod.subcategory_id) body.subcategory_id = Number(prod.subcategory_id);
+    if (prod.price !== undefined) body.price = Number(prod.price);
+    if (prod.mrp !== undefined) body.mrp = Number(prod.mrp);
+    if (prod.unit) body.unit = String(prod.unit).trim();
+    if (prod.image) body.image = String(prod.image).trim();
+    if (prod.description !== undefined) body.description = String(prod.description).trim();
+    if (encodedDetails !== undefined) body.details = encodedDetails;
+    if (totalStock !== undefined) {
+      body.stock = totalStock;
+      body.is_available = totalStock > 0;
+    }
+    if (prod.is_available !== undefined) body.is_available = Boolean(prod.is_available);
+
+    const updated = await sbFetch(`/products?id=eq.${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      body
+    });
+    const res = Array.isArray(updated) ? updated[0] : updated;
+    return this.parseProductVariants(res || { id, ...body });
+  },
+
+  async deleteProduct(id) {
+    return sbFetch(`/products?id=eq.${encodeURIComponent(id)}`, {
+      method: 'DELETE'
+    });
+  },
+
+  // Auto-Deduct Specific Variant Stock When Order is Placed
+  async deductProductStock(productId, qty, variantName) {
+    try {
+      const rawRows = await sbFetch(`/products?id=eq.${encodeURIComponent(productId)}&select=*&limit=1`);
+      if (!rawRows || !rawRows[0]) return false;
+
+      const prod = this.parseProductVariants(rawRows[0]);
+      const quantityToDeduct = Math.max(1, parseInt(qty, 10) || 1);
+      const targetVar = String(variantName || '').trim().toLowerCase();
+
+      // Find matching variant or first with stock
+      let matched = prod.variants.find(v => v.name.toLowerCase() === targetVar);
+      if (!matched && prod.variants.length > 0) {
+        matched = prod.variants.find(v => v.stock > 0) || prod.variants[0];
+      }
+
+      if (matched) {
+        matched.stock = Math.max(0, matched.stock - quantityToDeduct);
+      }
+
+      const newTotalStock = prod.variants.reduce((s, v) => s + v.stock, 0);
+      const newDetails = this.encodeProductDetails(prod.details, prod.variants, prod.category_id);
+
+      await sbFetch(`/products?id=eq.${encodeURIComponent(productId)}`, {
+        method: 'PATCH',
+        body: {
+          stock: newTotalStock,
+          is_available: newTotalStock > 0,
+          details: newDetails
+        }
+      });
+      return true;
+    } catch (e) {
+      console.warn(`[Supabase] deductProductStock error for product #${productId}:`, e.message);
+      return false;
+    }
   },
 
   async getCoupon(code) {

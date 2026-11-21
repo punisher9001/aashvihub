@@ -14,6 +14,12 @@ const T = k => (I18N[lang] && I18N[lang][k]) || (I18N.en && I18N.en[k]) || k;
 let cart = {};
 try { cart = JSON.parse(localStorage.cart || '{}'); } catch { cart = {}; }
 
+let wishlist = [];
+try { wishlist = JSON.parse(localStorage.getItem('aashvi_wishlist') || '[]'); } catch { wishlist = []; }
+
+let customerUser = null;
+try { customerUser = JSON.parse(localStorage.getItem('customerUser') || 'null'); } catch { customerUser = null; }
+
 const st = {
   catalog: [],
   cat: null,
@@ -309,6 +315,7 @@ function renderProducts() {
   grid.innerHTML = visibleList.map(p => {
     const off = p.mrp > p.price ? Math.round((1 - p.price / p.mrp) * 100) : 0;
     const n = cart[p.id] ? cart[p.id].qty : 0;
+    const isWished = wishlist.some(w => w.id === p.id);
 
     const ctl = !p.available
       ? `<button class="btn-unavailable" disabled>${esc(T('unavailable'))}</button>`
@@ -321,10 +328,13 @@ function renderProducts() {
         : `<button class="btn-add" data-a="${p.id}">+ ${esc(T('add'))}</button>`;
 
     return `
-      <div class="card ${p.available ? '' : 'na'}">
+      <div class="card ${p.available ? '' : 'na'}" style="position:relative;">
+        <button class="btn-wish-toggle" data-w="${p.id}" title="${isWished ? 'Remove from Wishlist' : 'Add to Wishlist'}" style="position:absolute; top:8px; right:8px; background:white; border:none; border-radius:50%; width:32px; height:32px; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(0,0,0,0.12); cursor:pointer; font-size:16px; z-index:10; transition:transform 0.2s;">
+          ${isWished ? '❤️' : '🤍'}
+        </button>
         <div class="card-top">
           ${off ? `<div class="discount-badge">${off}% ${esc(T('off'))}</div>` : ''}
-          <div class="doctor-verified-tag">✓ Dr. Verified</div>
+          <div class="doctor-verified-tag">✓ Verified</div>
           <div class="img-box" data-d="${p.id}" title="View details">
             ${p.image ? `<img src="${esc(p.image)}" alt="${esc(p.name)}" loading="lazy">` : '<span style="font-size:42px">📦</span>'}
           </div>
@@ -358,6 +368,10 @@ function renderProducts() {
   grid.querySelectorAll('[data-a]').forEach(e => e.onclick = () => changeQuantity(+e.dataset.a, 1));
   grid.querySelectorAll('[data-m]').forEach(e => e.onclick = () => changeQuantity(+e.dataset.m, -1));
   grid.querySelectorAll('[data-d]').forEach(e => e.onclick = () => openDetail(+e.dataset.d));
+  grid.querySelectorAll('[data-w]').forEach(e => e.onclick = (ev) => {
+    ev.stopPropagation();
+    toggleWishlist(+e.dataset.w);
+  });
 }
 
 // Product Details Modal
@@ -920,6 +934,182 @@ function showOrderSuccess(o, isWhatsapp = false, prefillWa = '') {
   showToast(`Order #${o.order_id} successfully confirmed!`);
 }
 
+// ==========================================
+// WISHLIST FUNCTIONALITY
+// ==========================================
+function updateWishlistBadge() {
+  const count = wishlist.length;
+  const countEl = $('#wishlistCount');
+  const modalCountEl = $('#wishlistModalCount');
+  if (countEl) countEl.textContent = count;
+  if (modalCountEl) modalCountEl.textContent = count;
+}
+
+function toggleWishlist(productId) {
+  const p = st.products.find(x => x.id === productId);
+  if (!p) return;
+  const idx = wishlist.findIndex(x => x.id === productId);
+  if (idx >= 0) {
+    wishlist.splice(idx, 1);
+    showToast('Removed from Wishlist', 'info');
+  } else {
+    wishlist.push({ id: p.id, name: p.name, price: p.price, mrp: p.mrp, image: p.image, unit: p.unit });
+    showToast('Added to Wishlist ❤️', 'success');
+  }
+  localStorage.setItem('aashvi_wishlist', JSON.stringify(wishlist));
+  updateWishlistBadge();
+  renderProducts();
+  renderWishlistModal();
+}
+
+function renderWishlistModal() {
+  const container = $('#wishlistItemsList');
+  if (!container) return;
+  if (!wishlist || wishlist.length === 0) {
+    container.innerHTML = `
+      <div style="text-align:center; padding:36px 16px; color:#64748b;">
+        <div style="font-size:44px; margin-bottom:10px;">🤍</div>
+        <div style="font-weight:700; font-size:16px; color:#0f172a;">Your Wishlist is Empty</div>
+        <p style="font-size:13px; margin-top:4px;">Tap the heart icon on any product to save it here for later.</p>
+      </div>
+    `;
+    return;
+  }
+  container.innerHTML = wishlist.map(item => `
+    <div style="display:flex; align-items:center; gap:12px; padding:12px; border-bottom:1px solid #f1f5f9;">
+      <img src="${item.image || 'https://via.placeholder.com/50'}" style="width:48px; height:48px; border-radius:8px; object-fit:cover;">
+      <div style="flex:1;">
+        <div style="font-weight:700; font-size:13px; color:#0f172a;">${esc(item.name)}</div>
+        <div style="font-size:13px; color:#059669; font-weight:700;">₹${item.price} <del style="color:#94a3b8; font-size:11px; margin-left:4px;">₹${item.mrp || ''}</del></div>
+      </div>
+      <button class="btn-add" style="padding:6px 12px; font-size:12px;" onclick="addWishlistToCart(${item.id})">+ Cart</button>
+      <button style="background:none; border:none; cursor:pointer; font-size:18px; color:#ef4444; padding:4px;" onclick="toggleWishlist(${item.id})" title="Remove">✕</button>
+    </div>
+  `).join('');
+}
+
+window.addWishlistToCart = function(id) {
+  changeQuantity(id, 1);
+  showToast('Moved to Cart 🛍️', 'success');
+};
+
+$('#openWishlistBtn')?.addEventListener('click', () => {
+  renderWishlistModal();
+  $('#wishlistModal').style.display = 'flex';
+});
+
+$('#closeWishlistBtn')?.addEventListener('click', () => {
+  $('#wishlistModal').style.display = 'none';
+});
+
+// ==========================================
+// CUSTOMER AUTH FUNCTIONALITY
+// ==========================================
+function updateCustomerAuthUI() {
+  const statusEl = $('#customerAuthStatusText');
+  if (!statusEl) return;
+  if (customerUser && customerUser.name) {
+    statusEl.textContent = 'Hi, ' + customerUser.name.split(' ')[0];
+  } else {
+    statusEl.textContent = 'Login / Signup';
+  }
+}
+
+$('#openCustomerAuthBtn')?.addEventListener('click', () => {
+  const modal = $('#customerAuthModal');
+  const loggedView = $('#customerLoggedInView');
+  const loginForm = $('#customerLoginForm');
+  const signupForm = $('#customerSignupForm');
+
+  if (customerUser && customerUser.name) {
+    $('#customerLoggedInName').textContent = 'Welcome, ' + customerUser.name;
+    $('#customerLoggedInPhone').textContent = 'Phone: ' + (customerUser.phone || '');
+    loggedView.style.display = 'block';
+    loginForm.style.display = 'none';
+    signupForm.style.display = 'none';
+  } else {
+    loggedView.style.display = 'none';
+    loginForm.style.display = 'block';
+    signupForm.style.display = 'none';
+  }
+  modal.style.display = 'flex';
+});
+
+$('#closeCustomerAuthBtn')?.addEventListener('click', () => {
+  $('#customerAuthModal').style.display = 'none';
+});
+
+$('#toggleToSignup')?.addEventListener('click', (e) => {
+  e.preventDefault();
+  $('#authModalTitle').textContent = 'Customer Sign Up';
+  $('#customerLoginForm').style.display = 'none';
+  $('#customerSignupForm').style.display = 'block';
+});
+
+$('#toggleToLogin')?.addEventListener('click', (e) => {
+  e.preventDefault();
+  $('#authModalTitle').textContent = 'Customer Login';
+  $('#customerSignupForm').style.display = 'none';
+  $('#customerLoginForm').style.display = 'block';
+});
+
+$('#customerLoginForm')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const phone = $('#custLoginPhone').value.trim();
+  const password = $('#custLoginPassword').value;
+  const alertEl = $('#customerAuthAlert');
+
+  alertEl.style.display = 'none';
+  try {
+    const res = await api('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, password })
+    });
+    customerUser = res.user;
+    localStorage.setItem('customerUser', JSON.stringify(customerUser));
+    updateCustomerAuthUI();
+    $('#customerAuthModal').style.display = 'none';
+    showToast(`Welcome back, ${customerUser.name}!`, 'success');
+  } catch (err) {
+    alertEl.textContent = err.message || 'Login failed';
+    alertEl.style.display = 'block';
+  }
+});
+
+$('#customerSignupForm')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const name = $('#custSignupName').value.trim();
+  const phone = $('#custSignupPhone').value.trim();
+  const password = $('#custSignupPassword').value;
+  const alertEl = $('#customerAuthAlert');
+
+  alertEl.style.display = 'none';
+  try {
+    const res = await api('/api/auth/signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, phone, password })
+    });
+    customerUser = res.user;
+    localStorage.setItem('customerUser', JSON.stringify(customerUser));
+    updateCustomerAuthUI();
+    $('#customerAuthModal').style.display = 'none';
+    showToast(`Account created! Welcome, ${customerUser.name}`, 'success');
+  } catch (err) {
+    alertEl.textContent = err.message || 'Signup failed';
+    alertEl.style.display = 'block';
+  }
+});
+
+$('#customerLogoutBtn')?.addEventListener('click', () => {
+  localStorage.removeItem('customerUser');
+  customerUser = null;
+  updateCustomerAuthUI();
+  $('#customerAuthModal').style.display = 'none';
+  showToast('Logged out successfully', 'info');
+});
+
 // Logo Click to Reset
 $('#logoBtn').onclick = () => {
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -928,6 +1118,9 @@ $('#logoBtn').onclick = () => {
 // Initialize Application
 (async function init() {
   try {
+    updateWishlistBadge();
+    updateCustomerAuthUI();
+
     $('#lang').innerHTML = Object.entries(I18N).map(([k, v]) => `
       <option value="${k}">${v._n}</option>
     `).join('');

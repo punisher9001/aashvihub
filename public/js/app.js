@@ -1,3 +1,26 @@
+// User selected active variant per product (productId -> variantObj)
+const selectedVariants = {};
+
+// Open Product Modal alias (Requirement #4)
+window.openProductModal = function(id) {
+  openDetail(id);
+};
+
+window.selectProductVariant = function(productId, varName, event) {
+  if (event) event.stopPropagation();
+  const p = st.products.find(x => x.id === productId) || 
+            st.categoryProducts.find(x => x.id === productId) || 
+            st.searchResults.find(x => x.id === productId) ||
+            (cart[productId] && cart[productId].p);
+  if (!p || !Array.isArray(p.variants)) return;
+
+  const vObj = p.variants.find(v => v.name === varName);
+  if (!vObj || vObj.stock <= 0) return;
+
+  selectedVariants[productId] = vObj;
+  renderProducts();
+};
+
 
 // Variant selection helper
 window.onVariantSelected = function(productId, variantName) {
@@ -534,36 +557,66 @@ function renderProductGrid(visibleList, grid, empty, countBadge) {
   if (empty) empty.hidden = true;
 
   grid.innerHTML = visibleList.map(p => {
-    const off = p.mrp > p.price ? Math.round((1 - p.price / p.mrp) * 100) : 0;
-    const n = cart[p.id] ? cart[p.id].qty : 0;
+    // Current selected variant or default first available
+    const variants = Array.isArray(p.variants) && p.variants.length > 0
+      ? p.variants
+      : [{ name: p.unit || 'Standard', stock: Number(p.stock || 0), price: Number(p.price || 0) }];
+
+    const activeVar = selectedVariants[p.id] || variants.find(v => v.stock > 0) || variants[0];
+    const currentPrice = (activeVar && activeVar.price) ? activeVar.price : p.price;
+    const isVarOOS = !activeVar || activeVar.stock <= 0;
+    const off = p.mrp > currentPrice ? Math.round((1 - currentPrice / p.mrp) * 100) : 0;
+    const cartItem = cart[p.id];
+    const n = cartItem ? cartItem.qty : 0;
     const isWished = wishlist.some(w => w.id === p.id);
 
-    const ctl = !p.available
-      ? `<button class="btn-unavailable" disabled>${esc(T('unavailable'))}</button>`
+    // Variant pills HTML (Clothes sizes / Food weights)
+    const pillsHtml = variants.length > 1 ? `
+      <div class="variant-pill-box" onclick="event.stopPropagation()">
+        ${variants.map(v => {
+          const isSelected = activeVar && activeVar.name === v.name;
+          const isOOS = v.stock <= 0;
+          return `
+            <span class="variant-pill ${isSelected ? 'selected' : ''} ${isOOS ? 'out-of-stock' : ''}"
+                  title="${isOOS ? 'Out of Stock' : (v.price ? inr(v.price) : '')}"
+                  onclick="selectProductVariant(${p.id}, '${esc(v.name)}', event)">
+              ${esc(v.name)}${isOOS ? ' (Out)' : ''}
+            </span>
+          `;
+        }).join('')}
+      </div>
+    ` : '';
+
+    const ctl = (!p.available || isVarOOS)
+      ? `<button class="btn-unavailable" disabled style="width:100%; padding:8px 12px; border-radius:8px; font-weight:700;">Out of Stock</button>`
       : n
-        ? `<div class="qty-control">
+        ? `<div class="qty-control" onclick="event.stopPropagation()">
              <button data-m="${p.id}" aria-label="Decrease quantity">−</button>
              <b>${n}</b>
              <button data-a="${p.id}" aria-label="Increase quantity">+</button>
            </div>`
-        : `<button class="btn-add" data-a="${p.id}">+ ${esc(T('add'))}</button>`;
+        : `<button class="btn-add" data-a="${p.id}" style="width:100%;">+ ${esc(T('add'))}</button>`;
 
     return `
-      <div class="card ${p.available ? '' : 'na'}" style="position:relative;">
-        <button class="btn-wish-toggle" data-w="${p.id}" title="${isWished ? 'Remove from Wishlist' : 'Add to Wishlist'}" style="position:absolute; top:8px; right:8px; background:white; border:none; border-radius:50%; width:32px; height:32px; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(0,0,0,0.12); cursor:pointer; font-size:16px; z-index:10; transition:transform 0.2s;">
+      <div class="card ${p.available && !isVarOOS ? '' : 'na'}" 
+           style="position:relative; cursor:pointer;" 
+           onclick="openProductModal(${p.id})"
+           title="Click to view ${esc(p.name)}">
+        <button class="btn-wish-toggle" data-w="${p.id}" title="${isWished ? 'Remove from Wishlist' : 'Add to Wishlist'}" style="position:absolute; top:8px; right:8px; background:white; border:none; border-radius:50%; width:32px; height:32px; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(0,0,0,0.12); cursor:pointer; font-size:16px; z-index:10; transition:transform 0.2s;" onclick="event.stopPropagation(); toggleWishlist(${p.id});">
           ${isWished ? '❤️' : '🤍'}
         </button>
         <div class="card-top">
           ${off ? `<div class="discount-badge">${off}% ${esc(T('off'))}</div>` : ''}
           <div class="doctor-verified-tag">✓ Verified</div>
-          <div class="img-box" data-d="${p.id}" title="View details">
+          <div class="img-box">
             ${p.image ? `<img src="${esc(p.image)}" alt="${esc(p.name)}" loading="lazy">` : '<span style="font-size:42px">📦</span>'}
           </div>
         </div>
 
         <div class="card-meta">
-          <div class="un">${esc(p.unit || 'Standard Unit')}</div>
-          <div class="nm" data-d="${p.id}" title="${esc(p.name)}">${esc(p.name)}</div>
+          <div class="un">${esc((activeVar ? activeVar.name : p.unit) || 'Standard Unit')}</div>
+          <div class="nm">${esc(p.name)}</div>
+          ${pillsHtml}
           <div class="rating-line">
             <span>★★★★★</span>
             <span class="rating-count">(4.9)</span>
@@ -572,53 +625,91 @@ function renderProductGrid(visibleList, grid, empty, countBadge) {
 
         <div class="card-bottom">
           <div class="price-box">
-            <div class="price-main">${inr(p.price)}</div>
-            ${p.mrp > p.price ? `
+            <div class="price-main">${inr(currentPrice)}</div>
+            ${p.mrp > currentPrice ? `
               <div class="price-mrp-row">
                 <s>${inr(p.mrp)}</s>
-                <span class="save-tag">Save ${inr(p.mrp - p.price)}</span>
+                <span class="save-tag">Save ${inr(p.mrp - currentPrice)}</span>
               </div>
             ` : ''}
           </div>
-          <div class="card-cta">${ctl}</div>
+          <div class="card-cta" onclick="event.stopPropagation()">${ctl}</div>
         </div>
       </div>
     `;
   }).join('');
 
-  grid.querySelectorAll('[data-a]').forEach(e => e.onclick = () => changeQuantity(+e.dataset.a, 1));
-  grid.querySelectorAll('[data-m]').forEach(e => e.onclick = () => changeQuantity(+e.dataset.m, -1));
-  grid.querySelectorAll('[data-d]').forEach(e => e.onclick = () => openDetail(+e.dataset.d));
-  grid.querySelectorAll('[data-w]').forEach(e => e.onclick = (ev) => {
+  grid.querySelectorAll('[data-a]').forEach(e => e.onclick = (ev) => {
     ev.stopPropagation();
-    toggleWishlist(+e.dataset.w);
+    changeQuantity(+e.dataset.a, 1);
+  });
+  grid.querySelectorAll('[data-m]').forEach(e => e.onclick = (ev) => {
+    ev.stopPropagation();
+    changeQuantity(+e.dataset.m, -1);
   });
 }
 
+
 // Product Details Modal
 function openDetail(id) {
-  const p = st.products.find(x => x.id === id) || (cart[id] && cart[id].p);
+  const p = st.products.find(x => x.id === id) || 
+            st.categoryProducts.find(x => x.id === id) || 
+            st.searchResults.find(x => x.id === id) || 
+            (cart[id] && cart[id].p);
   if (!p) return;
 
-  const off = p.mrp > p.price ? Math.round((1 - p.price / p.mrp) * 100) : 0;
+  const variants = Array.isArray(p.variants) && p.variants.length > 0
+    ? p.variants
+    : [{ name: p.unit || 'Standard', stock: Number(p.stock || 0), price: Number(p.price || 0) }];
+
+  const activeVar = selectedVariants[p.id] || variants.find(v => v.stock > 0) || variants[0];
+  const currentPrice = (activeVar && activeVar.price) ? activeVar.price : p.price;
+  const isVarOOS = !activeVar || activeVar.stock <= 0;
+  const off = p.mrp > currentPrice ? Math.round((1 - currentPrice / p.mrp) * 100) : 0;
   const inCart = cart[p.id] ? cart[p.id].qty : 0;
 
-  const waText = encodeURIComponent(`Hello Dr Mukul Kumar, I would like to order "${p.name}" (${p.unit}) from Aashvi Hub at ${inr(p.price)}.`);
+  const waText = encodeURIComponent(`Hello Dr Mukul Kumar, I would like to order "${p.name}" (${activeVar ? activeVar.name : p.unit}) from Aashvi Hub at ${inr(currentPrice)}.`);
+
+  const pillsHtml = variants.length > 1 ? `
+    <div class="modal-variant-box">
+      <div class="modal-variant-label">
+        <span>Select Option / Size / Pack:</span>
+        <span style="font-size:12px; color:${isVarOOS ? '#ef4444' : '#059669'}; font-weight:700;">
+          ${isVarOOS ? 'Out of Stock' : `Available Stock: ${activeVar.stock}`}
+        </span>
+      </div>
+      <div class="modal-variant-pills">
+        ${variants.map(v => {
+          const isSelected = activeVar && activeVar.name === v.name;
+          const isOOS = v.stock <= 0;
+          return `
+            <button type="button" class="modal-variant-pill ${isSelected ? 'selected' : ''} ${isOOS ? 'out-of-stock' : ''}"
+                    ${isOOS ? 'disabled' : ''}
+                    onclick="selectProductVariant(${p.id}, '${esc(v.name)}'); openDetail(${p.id});">
+              ${esc(v.name)}${v.price ? ` • ${inr(v.price)}` : ''}${isOOS ? ' (Out of stock)' : ''}
+            </button>
+          `;
+        }).join('')}
+      </div>
+    </div>
+  ` : '';
 
   $('#modalBody').innerHTML = `
     <div class="modal-detail-wrap">
       ${p.image ? `<img src="${esc(p.image)}" class="modal-detail-img" alt="${esc(p.name)}">` : ''}
-      <div class="un" style="color:var(--text-muted);font-weight:600;font-size:13px">${esc(p.unit)}</div>
+      <div class="un" style="color:var(--text-muted);font-weight:600;font-size:13px">${esc((activeVar ? activeVar.name : p.unit) || 'Standard')}</div>
       <h3 class="modal-detail-title">${esc(p.name)}</h3>
 
       <div class="price-box" style="margin: 8px 0 14px">
-        <div style="font-size:24px;font-weight:800;color:var(--primary)">${inr(p.price)}</div>
-        ${p.mrp > p.price ? `
+        <div style="font-size:24px;font-weight:800;color:var(--primary)">${inr(currentPrice)}</div>
+        ${p.mrp > currentPrice ? `
           <div style="font-size:13.5px;color:var(--text-muted)">
             MRP: <s>${inr(p.mrp)}</s> • <strong style="color:var(--primary)">${off}% ${esc(T('off'))}</strong>
           </div>
         ` : ''}
       </div>
+
+      ${pillsHtml}
 
       <div class="modal-doctor-box">
         <strong>🩺 Quality Checked • Dr Mukul Kumar (8988227729)</strong>
@@ -633,8 +724,8 @@ function openDetail(id) {
       ` : ''}
 
       <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap">
-        <button id="modalAddBtn" class="primary-btn" style="flex:1">
-          ${inCart ? `Add More (${inCart} in cart)` : `Add to Cart • ${inr(p.price)}`}
+        <button id="modalAddBtn" class="primary-btn" style="flex:1" ${isVarOOS ? 'disabled style="flex:1; opacity:0.5;"' : ''}>
+          ${isVarOOS ? 'Out of Stock' : (inCart ? `In Cart (${inCart}) • Add More` : `Add to Cart • ${inr(currentPrice)}`)}
         </button>
         <a href="https://wa.me/918988227729?text=${waText}" target="_blank" rel="noopener" class="btn-whatsapp-order" style="display:flex;align-items:center;padding:12px 18px;border-radius:var(--radius-sm)">
           <span>WhatsApp Order</span>
@@ -644,26 +735,48 @@ function openDetail(id) {
   `;
 
   $('#modalAddBtn').onclick = () => {
+    if (isVarOOS) return;
     changeQuantity(p.id, 1);
-    showToast(`Added "${p.name}" to cart`);
+    showToast(`Added "${p.name} (${activeVar ? activeVar.name : p.unit})"`);
     $('#modal').hidden = true;
   };
 
   $('#modal').hidden = false;
 }
 
+
 // Cart Quantity Management
 function changeQuantity(id, delta) {
-  const p = st.products.find(x => x.id === id) || (cart[id] && cart[id].p);
+  const p = st.products.find(x => x.id === id) || 
+            st.categoryProducts.find(x => x.id === id) || 
+            st.searchResults.find(x => x.id === id) || 
+            (cart[id] && cart[id].p);
   if (!p) return;
+
+  const variants = Array.isArray(p.variants) && p.variants.length > 0
+    ? p.variants
+    : [{ name: p.unit || 'Standard', stock: Number(p.stock || 0), price: Number(p.price || 0) }];
+
+  const activeVar = selectedVariants[id] || (cart[id] && cart[id].variant ? variants.find(v => v.name === cart[id].variant) : null) || variants.find(v => v.stock > 0) || variants[0];
+  const maxStock = activeVar ? activeVar.stock : Number(p.stock || 0);
 
   const current = cart[id] ? cart[id].qty : 0;
   const next = current + delta;
 
+  if (next > maxStock) {
+    showToast(`Only ${maxStock} items available for ${activeVar ? activeVar.name : 'this item'}`, 'error');
+    return;
+  }
+
   if (next <= 0) {
     delete cart[id];
   } else {
-    cart[id] = { p, qty: next };
+    const itemPrice = (activeVar && activeVar.price) ? activeVar.price : p.price;
+    cart[id] = { 
+      p: { ...p, price: itemPrice }, 
+      qty: next, 
+      variant: activeVar ? activeVar.name : (p.unit || 'Standard') 
+    };
   }
 
   localStorage.cart = JSON.stringify(cart);
@@ -1046,7 +1159,13 @@ $('#checkout').onsubmit = async ev => {
   const msg = $('#orderMsg');
   msg.textContent = '';
 
-  const items = Object.entries(cart).map(([id, c]) => ({ id: +id, qty: c.qty }));
+  const items = Object.entries(cart).map(([id, c]) => ({ 
+    id: +id, 
+    qty: c.qty, 
+    variant: c.variant || (c.p ? c.p.unit : 'Standard'),
+    name: c.p ? c.p.name : `Product #${id}`,
+    price: c.p ? c.p.price : 0
+  }));
   if (!items.length) {
     msg.textContent = T('empty');
     return;

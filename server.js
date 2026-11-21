@@ -6,9 +6,9 @@ const path = require('path');
 const { localDb, checkMysqlConnection, getUseMysql, getMysqlPool } = require('./database/db');
 const supabaseDb = require('./database/supabase');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'aashvi_hub_secure_jwt_secret_2026';
-const ADMIN_USER = process.env.ADMIN_USER || 'admin';
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
+const JWT_SECRET = process.env.JWT_SECRET;
+const ADMIN_USER = process.env.ADMIN_USER;
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 const RZP_KEY = process.env.RAZORPAY_KEY_ID || '';
 const RZP_SECRET = process.env.RAZORPAY_KEY_SECRET || '';
 
@@ -308,7 +308,7 @@ app.post('/api/admin/signup', wrap(async (req, res) => {
   localDb.save();
 
   if (supabaseDb.isConfigured()) {
-    try { await supabaseDb.createAdmin(u, hash); } catch (e) {}
+    try { await supabaseDb.createAdmin(u, hash); } catch (e) { }
   }
 
   const token = jwt.sign({ id: newAdmin.id, username: newAdmin.username, role: 'admin' }, JWT_SECRET, { expiresIn: '7d' });

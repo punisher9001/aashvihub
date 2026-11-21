@@ -2992,3 +2992,103 @@ body[dir="rtl"] .toast-container {
     font-size: 18px;
   }
 }
+
+/* =======================================================
+   Variant Pills (Clothes Sizes & Food/Vegetable Weights)
+   ======================================================= */
+.variant-pill-box {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0 6px 0;
+}
+
+.variant-pill {
+  padding: 4px 9px;
+  font-size: 11.5px;
+  font-weight: 700;
+  border-radius: 6px;
+  border: 1.5px solid var(--border, #cbd5e1);
+  background: #f8fafc;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  user-select: none;
+  line-height: 1.2;
+}
+
+.variant-pill:hover:not(.out-of-stock) {
+  border-color: var(--primary, #059669);
+  background: #ecfdf5;
+  color: var(--primary-dark, #047857);
+}
+
+.variant-pill.selected {
+  border-color: var(--primary, #059669);
+  background: var(--primary, #059669);
+  color: #ffffff !important;
+  box-shadow: 0 2px 6px rgba(5, 150, 105, 0.28);
+}
+
+.variant-pill.out-of-stock {
+  opacity: 0.45;
+  cursor: not-allowed;
+  text-decoration: line-through;
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+  color: #94a3b8;
+}
+
+.modal-variant-box {
+  margin: 14px 0;
+}
+
+.modal-variant-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modal-variant-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.modal-variant-pill {
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: 8px;
+  border: 1.5px solid var(--border, #cbd5e1);
+  background: #f8fafc;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.modal-variant-pill:hover:not(.out-of-stock) {
+  border-color: var(--primary, #059669);
+  background: #ecfdf5;
+  color: var(--primary, #059669);
+}
+
+.modal-variant-pill.selected {
+  border-color: var(--primary, #059669);
+  background: var(--primary, #059669);
+  color: #ffffff !important;
+  box-shadow: 0 3px 8px rgba(5, 150, 105, 0.3);
+}
+
+.modal-variant-pill.out-of-stock {
+  opacity: 0.45;
+  cursor: not-allowed;
+  text-decoration: line-through;
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+  color: #94a3b8;
+}

@@ -20,11 +20,16 @@ try { wishlist = JSON.parse(localStorage.getItem('aashvi_wishlist') || '[]'); } 
 let customerUser = null;
 try { customerUser = JSON.parse(localStorage.getItem('customerUser') || 'null'); } catch { customerUser = null; }
 
+// State
 const st = {
   catalog: [],
   cat: null,
   sub: null,
+  view: 'home',
+  prevView: 'home',
   products: [],
+  categoryProducts: [],
+  searchResults: [],
   cfg: {
     shop: 'Aashvi Hub',
     owner_name: 'Dr Mukul Kumar',
@@ -157,111 +162,305 @@ async function loadTheme() {
   }
 }
 
-// Render Categories with Translations
+// ==========================================================================
+// Blinkit-Style Navigation & Category Controller
+// ==========================================================================
+
+// Render Main Category Cards on Home Page
 function renderCats() {
   const container = $('#cats');
   if (!container) return;
 
   container.innerHTML = st.catalog.map(c => {
     const translatedName = T('cat_' + c.id) || c.name;
+    const subCount = c.subs ? c.subs.length : 0;
     return `
-      <div class="cat ${st.cat === c.id ? 'on' : ''}" data-id="${c.id}">
+      <div class="cat ${st.cat === c.id ? 'on' : ''}" data-id="${c.id}" title="Click to view all ${esc(translatedName)}">
         <span class="ic">${esc(c.icon || '🛍️')}</span>
         <span class="cat-name">${esc(translatedName)}</span>
+        <small style="color:var(--text-muted); font-size:11.5px; margin-top:3px; display:block;">${subCount} Subcategories</small>
+        <span style="display:inline-block; margin-top:6px; font-size:12px; font-weight:700; color:var(--primary);">Explore →</span>
       </div>
     `;
   }).join('');
 
   container.querySelectorAll('.cat').forEach(e => {
     e.onclick = () => {
-      st.cat = +e.dataset.id;
-      st.sub = null;
-      renderCats();
-      renderSubs();
-      loadProducts();
+      openCategory(+e.dataset.id);
     };
   });
 }
 
-// Render Subcategories for currently active category
-function renderSubs() {
-  const container = $('#subs');
-  const subsHeader = $('#subsHeader');
-  if (!container) return;
+// Open Dedicated Category Page View (Blinkit Style)
+async function openCategory(catId, subId = null) {
+  st.prevView = st.view;
+  st.view = 'category';
+  st.cat = catId;
+  st.sub = subId;
 
-  const currentCat = st.catalog.find(x => x.id === st.cat);
-  if (!currentCat || !currentCat.subs || !currentCat.subs.length) {
-    container.innerHTML = '';
-    if (subsHeader) subsHeader.hidden = true;
-    return;
-  }
+  // View Visibility Switching
+  const homeView = $('#homeView');
+  const catView = $('#categoryView');
+  const searchView = $('#searchView');
+  if (homeView) homeView.hidden = true;
+  if (catView) catView.hidden = false;
+  if (searchView) searchView.hidden = true;
 
-  if (subsHeader) subsHeader.hidden = false;
+  // Clear search input if switching to category view
+  const searchInput = $('#search');
+  if (searchInput) searchInput.value = '';
+  const clearBtn = $('#clearSearch');
+  if (clearBtn) clearBtn.hidden = true;
 
-  const catName = T('cat_' + currentCat.id) || currentCat.name;
-  const allLabel = `${T('filter_all')} ${catName}`;
-  const allChip = `<span class="chip ${!st.sub ? 'on' : ''}" data-id="">${esc(allLabel)}</span>`;
+  // Update Category Sticky Header
+  const currentCat = st.catalog.find(c => c.id === catId);
+  if (currentCat) {
+    const catName = T('cat_' + currentCat.id) || currentCat.name;
+    const iconEl = $('#catViewIcon');
+    if (iconEl) iconEl.textContent = currentCat.icon || '🍲';
+    const titleEl = $('#catViewTitle');
+    if (titleEl) titleEl.textContent = catName;
+    const countEl = $('#catViewCountBadge');
+    if (countEl) countEl.textContent = 'Loading products...';
 
-  const subChips = currentCat.subs.map(s => {
-    const translatedSub = T('sub_' + s.id) || s.name;
-    return `
-      <span class="chip ${st.sub === s.id ? 'on' : ''}" data-id="${s.id}">
-        ${esc(translatedSub)}
-      </span>
-    `;
-  }).join('');
+    // Quick Category Switcher Pills
+    const switcherEl = $('#catQuickSwitcher');
+    if (switcherEl) {
+      switcherEl.innerHTML = st.catalog.map(c => {
+        const isActive = c.id === catId;
+        const name = T('cat_' + c.id) || c.name;
+        return `
+          <button class="cat-quick-pill ${isActive ? 'active' : ''}" data-cat="${c.id}">
+            <span>${c.icon || '🛍️'}</span>
+            <span>${esc(name)}</span>
+          </button>
+        `;
+      }).join('');
 
-  container.innerHTML = allChip + subChips;
-
-  container.querySelectorAll('.chip').forEach(e => {
-    e.onclick = () => {
-      st.sub = e.dataset.id ? +e.dataset.id : null;
-      renderSubs();
-      loadProducts();
-    };
-  });
-}
-
-// Fetch Products from Backend
-async function loadProducts() {
-  const p = new URLSearchParams();
-  const qv = $('#search').value.trim();
-
-  const titleEl = $('#currentCatTitle');
-  if (qv) {
-    p.set('q', qv);
-    if (titleEl) titleEl.textContent = `Search results for "${qv}"`;
-    $('#clearSearch').hidden = false;
-  } else {
-    $('#clearSearch').hidden = true;
-    if (st.sub) {
-      p.set('sub', st.sub);
-      const cat = st.catalog.find(x => x.id === st.cat);
-      const sub = cat && cat.subs.find(x => x.id === st.sub);
-      const name = sub ? (T('sub_' + sub.id) || sub.name) : 'Products';
-      if (titleEl) titleEl.textContent = name;
-    } else if (st.cat) {
-      p.set('cat', st.cat);
-      const cat = st.catalog.find(x => x.id === st.cat);
-      const name = cat ? (T('cat_' + cat.id) || cat.name) : 'Products';
-      if (titleEl) titleEl.textContent = name;
-    } else {
-      if (titleEl) titleEl.textContent = 'All Featured Products';
+      switcherEl.querySelectorAll('.cat-quick-pill').forEach(b => {
+        b.onclick = () => openCategory(+b.dataset.cat);
+      });
     }
   }
 
-  try {
-    st.products = await api('/api/products?' + p.toString());
-  } catch (e) {
-    console.error('Error fetching products:', e);
-    st.products = [];
-  }
-  renderProducts();
+  // Render Subcategories Sidebar / Tabs
+  renderSubs();
+
+  // Load Products for this Category
+  await loadCategoryProducts();
+
+  // Smooth scroll to top of category view
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// Compute Filtered & Sorted Products
-function getFilteredProducts() {
-  let list = [...st.products];
+// Render Subcategories Sidebar / Visual Pills
+function renderSubs() {
+  const container = $('#subs');
+  if (!container) return;
+
+  const currentCat = st.catalog.find(x => x.id === st.cat);
+  if (!currentCat) {
+    container.innerHTML = '';
+    return;
+  }
+
+  const catName = T('cat_' + currentCat.id) || currentCat.name;
+  const isAllActive = !st.sub;
+
+  const allItem = `
+    <button class="subnav-tab-item ${isAllActive ? 'active' : ''}" data-id="">
+      <span>All ${esc(catName)}</span>
+      <span class="tab-check">✓</span>
+    </button>
+  `;
+
+  const subItems = (currentCat.subs || []).map(s => {
+    const isSubActive = st.sub === s.id;
+    const subName = T('sub_' + s.id) || s.name;
+    return `
+      <button class="subnav-tab-item ${isSubActive ? 'active' : ''}" data-id="${s.id}">
+        <span>${esc(subName)}</span>
+        <span class="tab-check">✓</span>
+      </button>
+    `;
+  }).join('');
+
+  container.innerHTML = allItem + subItems;
+
+  container.querySelectorAll('.subnav-tab-item').forEach(btn => {
+    btn.onclick = () => {
+      st.sub = btn.dataset.id ? +btn.dataset.id : null;
+      renderSubs();
+      loadCategoryProducts();
+    };
+  });
+}
+
+// Fetch and Render Products for Active Category & Subcategory
+async function loadCategoryProducts() {
+  const p = new URLSearchParams();
+  if (st.cat) p.set('cat', st.cat);
+  if (st.sub) p.set('sub', st.sub);
+
+  const currentCat = st.catalog.find(x => x.id === st.cat);
+  const catName = currentCat ? (T('cat_' + currentCat.id) || currentCat.name) : 'Category';
+  const subObj = currentCat && currentCat.subs && currentCat.subs.find(x => x.id === st.sub);
+  const subName = subObj ? (T('sub_' + subObj.id) || subObj.name) : `All ${catName}`;
+
+  const headerEl = $('#catSectionHeader');
+  if (headerEl) headerEl.textContent = subName;
+
+  try {
+    st.categoryProducts = await api('/api/products?' + p.toString());
+  } catch (err) {
+    console.error('Error fetching category products:', err);
+    st.categoryProducts = [];
+  }
+
+  const badgeTop = $('#catViewCountBadge');
+  if (badgeTop) {
+    badgeTop.textContent = `${st.categoryProducts.length} product${st.categoryProducts.length === 1 ? '' : 's'} available`;
+  }
+
+  renderCategoryProducts();
+}
+
+function renderCategoryProducts() {
+  const grid = $('#catGrid');
+  const empty = $('#catEmptyGrid');
+  const countBadge = $('#catProductsBadge');
+  const filtered = getFilteredList(st.categoryProducts);
+  renderProductGrid(filtered, grid, empty, countBadge);
+}
+
+// Return Cleanly to Main Home View
+function goToHome() {
+  st.view = 'home';
+  st.cat = null;
+  st.sub = null;
+
+  const searchInput = $('#search');
+  if (searchInput) searchInput.value = '';
+  const clearBtn = $('#clearSearch');
+  if (clearBtn) clearBtn.hidden = true;
+
+  const homeView = $('#homeView');
+  const catView = $('#categoryView');
+  const searchView = $('#searchView');
+  if (homeView) homeView.hidden = false;
+  if (catView) catView.hidden = true;
+  if (searchView) searchView.hidden = true;
+
+  loadHomeProducts();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Fetch and Render Home Featured Products
+async function loadHomeProducts() {
+  try {
+    st.products = await api('/api/products');
+  } catch (err) {
+    console.error('Error fetching home products:', err);
+    st.products = [];
+  }
+  renderHomeProducts();
+}
+
+function renderHomeProducts() {
+  const grid = $('#grid');
+  const empty = $('#emptyGrid');
+  const countBadge = $('#productCountBadge');
+  const filtered = getFilteredList(st.products);
+  renderProductGrid(filtered, grid, empty, countBadge);
+}
+
+// Blinkit-Style Live Search Handler
+function handleSearchInput() {
+  const qv = ($('#search').value || '').trim();
+
+  if (!qv) {
+    if (st.view === 'search') {
+      if (st.prevView === 'category' && st.cat) {
+        openCategory(st.cat, st.sub);
+      } else {
+        goToHome();
+      }
+    }
+    return;
+  }
+
+  if (st.view !== 'search') {
+    st.prevView = st.view;
+  }
+  st.view = 'search';
+
+  const homeView = $('#homeView');
+  const catView = $('#categoryView');
+  const searchView = $('#searchView');
+  if (homeView) homeView.hidden = true;
+  if (catView) catView.hidden = true;
+  if (searchView) searchView.hidden = false;
+
+  const clearBtn = $('#clearSearch');
+  if (clearBtn) clearBtn.hidden = false;
+
+  const queryText = $('#searchQueryText');
+  if (queryText) queryText.textContent = qv;
+
+  const backBtnText = $('#searchBackBtnText');
+  if (backBtnText) {
+    backBtnText.textContent = st.prevView === 'category' ? '← Back to Category' : '← Back to Home';
+  }
+
+  clearTimeout(st.searchTimer);
+  st.searchTimer = setTimeout(loadSearchResults, 200);
+}
+
+async function loadSearchResults() {
+  const qv = ($('#search').value || '').trim();
+  if (!qv) return;
+
+  try {
+    st.searchResults = await api('/api/products?q=' + encodeURIComponent(qv));
+  } catch (err) {
+    console.error('Error fetching search results:', err);
+    st.searchResults = [];
+  }
+  renderSearchResults();
+}
+
+function renderSearchResults() {
+  const grid = $('#searchGrid');
+  const empty = $('#searchEmptyGrid');
+  const countBadge = $('#searchCountBadge');
+  const filtered = getFilteredList(st.searchResults);
+  renderProductGrid(filtered, grid, empty, countBadge);
+}
+
+// Master Router for Rendering
+function loadProducts() {
+  if (st.view === 'category') {
+    loadCategoryProducts();
+  } else if (st.view === 'search') {
+    loadSearchResults();
+  } else {
+    loadHomeProducts();
+  }
+}
+
+function renderProducts() {
+  if (st.view === 'category') {
+    renderCategoryProducts();
+  } else if (st.view === 'search') {
+    renderSearchResults();
+  } else {
+    renderHomeProducts();
+  }
+}
+
+// Filter and Sort Engine (Applies to whichever list is passed)
+function getFilteredList(sourceList) {
+  let list = [...(sourceList || [])];
 
   // In Stock Filter
   if (st.stockOnly) {
@@ -292,13 +491,9 @@ function getFilteredProducts() {
   return list;
 }
 
-// Render Product Grid with Active Filters
-function renderProducts() {
-  const grid = $('#grid');
-  const empty = $('#emptyGrid');
-  const countBadge = $('#productCountBadge');
-
-  const visibleList = getFilteredProducts();
+// Reusable Product Cards Grid Renderer
+function renderProductGrid(visibleList, grid, empty, countBadge) {
+  if (!grid) return;
 
   if (countBadge) {
     countBadge.textContent = `${visibleList.length} item${visibleList.length === 1 ? '' : 's'}`;
@@ -609,17 +804,49 @@ $('#modalPinCheckBtn').onclick = async () => {
   }
 };
 
-// Search handling
-$('#search').oninput = () => {
-  clearTimeout(st.searchTimer);
-  st.searchTimer = setTimeout(loadProducts, 250);
-};
+// Search handling (Blinkit Live Search)
+$('#search')?.addEventListener('input', handleSearchInput);
 
-$('#clearSearch').onclick = () => {
+$('#clearSearch')?.addEventListener('click', () => {
   $('#search').value = '';
   $('#clearSearch').hidden = true;
-  loadProducts();
-};
+  if (st.prevView === 'category' && st.cat) {
+    openCategory(st.cat, st.sub);
+  } else {
+    goToHome();
+  }
+});
+
+// Blinkit Navigation Back & Reset Buttons
+$('#catBackToHomeBtn')?.addEventListener('click', goToHome);
+
+$('#searchBackBtn')?.addEventListener('click', () => {
+  if (st.prevView === 'category' && st.cat) {
+    openCategory(st.cat, st.sub);
+  } else {
+    goToHome();
+  }
+});
+
+$('#searchClearBtn')?.addEventListener('click', () => {
+  $('#search').value = '';
+  $('#clearSearch').hidden = true;
+  if (st.prevView === 'category' && st.cat) {
+    openCategory(st.cat, st.sub);
+  } else {
+    goToHome();
+  }
+});
+
+$('#searchEmptyBackBtn')?.addEventListener('click', goToHome);
+
+$('#logoBtn')?.addEventListener('click', () => {
+  if (st.view !== 'home') {
+    goToHome();
+  } else {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+});
 
 // Filter & Sort Toolbar Handlers
 const sortSelect = $('#sortSelect');
@@ -1153,9 +1380,10 @@ $('#logoBtn').onclick = () => {
     }
 
     st.catalog = await api('/api/catalog');
-    if (st.catalog.length) {
-      st.cat = st.catalog[0].id;
-    }
+    st.cat = null;
+    st.sub = null;
+    st.view = 'home';
+    renderCats();
 
     if (localStorage.pin) {
       checkPin(localStorage.pin).catch(() => {});
@@ -1163,7 +1391,7 @@ $('#logoBtn').onclick = () => {
 
     applyLang();
     loadTheme().catch(() => {});
-    loadProducts();
+    loadHomeProducts();
   } catch (err) {
     console.error('Initialization error:', err);
   }

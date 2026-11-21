@@ -646,6 +646,17 @@
             <option value="5">Fresh Vegetables</option>
           </select>
         </div>
+        <div class="form-group">
+          <label>Subcategory *</label>
+          <select id="newProdSubcategory" class="form-control" required>
+            <option value="">-- Select Subcategory --</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Sizes / Pack Variants & Stock Matrix</label>
+          <div id="variantsContainer" style="display:flex; flex-direction:column; gap:8px; margin-bottom:8px;"></div>
+          <button type="button" id="addVariantRowBtn" class="btn btn-secondary btn-sm" style="width:auto;">+ Add Size / Variant (e.g. S, M, L, 250g, 500g)</button>
+        </div>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
           <div class="form-group">
             <label>Sale Price (₹) *</label>

@@ -22,18 +22,18 @@
   <!-- Top Support Bar -->
   <div class="top-bar">
     <div class="top-bar-inner">
-        <div class="top-bar-left"><!-- Doctor Managed info removed --></div>
+      <div class="top-bar-left">
+        <span class="top-highlight">⚡ All-India Express Delivery • 100% Genuine Quality</span>
+      </div>
       <div class="top-bar-right">
-        <a href="tel:8988227729" class="top-link">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-          <span data-t="top_call">Call: +91 8988227729</span>
-        </a>
-
         <button id="openTrackBtn" class="top-btn-track">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
           <span data-t="trackOrder">Track Order</span>
         </button>
-        <a href="admin.html" class="top-link admin-top" title="Admin Portal">
+        <button id="openCustomerAuthBtn" class="top-btn-track" style="background:rgba(255,255,255,0.1); border-radius:20px;">
+          <span>👤 <span id="customerAuthStatusText">Login / Signup</span></span>
+        </button>
+        <a href="/admin" class="top-link admin-top" title="Admin Portal">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 14.93V18a1 1 0 0 1-2 0v-1.07A7 7 0 0 1 5.07 11H6a1 1 0 0 1 0-2h-.93A7 7 0 0 1 11 5.07V6a1 1 0 0 1 2 0v-.93A7 7 0 0 1 18.93 11H18a1 1 0 0 1 0 2h.93A7 7 0 0 1 13 16.93z"/></svg>
           <span>Admin</span>
         </a>
@@ -85,11 +85,17 @@
           <select id="lang" aria-label="Select Language"></select>
         </div>
 
-        <!-- WhatsApp Direct Order Button -->
-        <a href="https://wa.me/918988227729?text=Hello%20Dr%20Mukul%20Kumar,%20I%20would%20like%20to%20place%20an%20order%20directly" target="_blank" rel="noopener" class="btn-whatsapp-order" title="Order via WhatsApp directly from Dr Mukul Kumar">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91C2.13 13.66 2.59 15.36 3.45 16.86L2.05 22L7.3 20.62C8.75 21.41 10.38 21.83 12.04 21.83C17.5 21.83 21.95 17.38 21.95 11.92C21.95 9.27 20.92 6.78 19.05 4.91C17.18 3.03 14.69 2 12.04 2M12.05 3.67C14.25 3.67 16.31 4.53 17.87 6.09C19.42 7.65 20.28 9.72 20.28 11.92C20.28 16.46 16.58 20.15 12.04 20.15C10.56 20.15 9.11 19.76 7.85 19L7.55 18.83L4.43 19.65L5.26 16.61L5.06 16.29C4.24 14.99 3.81 13.47 3.81 11.91C3.81 7.37 7.5 3.67 12.05 3.67Z"/></svg>
-          <span data-t="orderOnWhatsapp">WhatsApp Order</span>
-        </a>
+        <!-- Wishlist Button -->
+        <button id="openWishlistBtn" class="cartbtn" aria-label="My Wishlist" style="background:#fff1f2; border:1px solid #fecdd3; color:#e11d48; margin-right:6px; cursor:pointer;">
+          <div class="cart-icon-wrap">
+            <span style="font-size:18px;">❤️</span>
+            <span id="wishlistCount" class="cart-badge" style="background:#e11d48; color:white;">0</span>
+          </div>
+          <div class="cart-text">
+            <span class="cart-sub" style="color:#e11d48;">Saved</span>
+            <span class="cart-price" style="color:#9f1239;">Wishlist</span>
+          </div>
+        </button>
 
         <!-- Cart Button -->
         <button id="cartBtn" class="cartbtn" aria-label="Shopping Cart">
@@ -125,13 +131,12 @@
         </p>
 
         <div class="hero-actions">
-          <a href="?show=categories" class="btn-hero-primary">
+          <a href="#shopSection" class="btn-hero-primary">
             <span data-t="hero_btn_shop">Explore Products</span>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
           </a>
-          <a href="https://wa.me/918988227729?text=Hello%20Dr%20Mukul%20Kumar,%20I%20need%20assistance%20with%20an%20order%20from%20Aashvi%20Hub" target="_blank" rel="noopener" class="btn-hero-secondary">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91C2.13 13.66 2.59 15.36 3.45 16.86L2.05 22L7.3 20.62C8.75 21.41 10.38 21.83 12.04 21.83C17.5 21.83 21.95 17.38 21.95 11.92C21.95 9.27 20.92 6.78 19.05 4.91C17.18 3.03 14.69 2 12.04 2M12.05 3.67C14.25 3.67 16.31 4.53 17.87 6.09C19.42 7.65 20.28 9.72 20.28 11.92C20.28 16.46 16.58 20.15 12.04 20.15C10.56 20.15 9.11 19.76 7.85 19L7.55 18.83L4.43 19.65L5.26 16.61L5.06 16.29C4.24 14.99 3.81 13.47 3.81 11.91C3.81 7.37 7.5 3.67 12.05 3.67Z"/></svg>
-            <span data-t="hero_btn_wa">Consult on WhatsApp</span>
+          <a href="#cats" class="btn-hero-secondary">
+            <span>Browse Categories</span>
           </a>
         </div>
       </div>
@@ -482,6 +487,74 @@
       </div>
     </div>
   </footer>
+
+  <!-- Wishlist Drawer / Modal -->
+  <div id="wishlistModal" class="modal-backdrop" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:999; justify-content:center; align-items:center; padding:20px;">
+    <div style="background:white; border-radius:18px; max-width:540px; width:100%; max-height:85vh; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 20px 40px rgba(0,0,0,0.2);">
+      <div style="padding:18px 24px; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center;">
+        <h3 style="margin:0; font-family:'Outfit', sans-serif; font-size:20px; display:flex; align-items:center; gap:8px;">
+          <span>❤️</span> My Wishlist (<span id="wishlistModalCount">0</span>)
+        </h3>
+        <button id="closeWishlistBtn" style="background:none; border:none; font-size:22px; cursor:pointer; color:#64748b;">✕</button>
+      </div>
+      <div id="wishlistItemsList" style="padding:20px; overflow-y:auto; flex:1;">
+        <!-- Injected via app.js -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Customer Auth Modal (Login / Signup) -->
+  <div id="customerAuthModal" class="modal-backdrop" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:999; justify-content:center; align-items:center; padding:20px;">
+    <div style="background:white; border-radius:18px; max-width:440px; width:100%; padding:30px; box-shadow:0 20px 40px rgba(0,0,0,0.2);">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+        <h3 id="authModalTitle" style="margin:0; font-family:'Outfit', sans-serif; font-size:22px;">Customer Login</h3>
+        <button id="closeCustomerAuthBtn" style="background:none; border:none; font-size:22px; cursor:pointer; color:#64748b;">✕</button>
+      </div>
+
+      <div id="customerAuthAlert" style="display:none; padding:10px 14px; border-radius:8px; font-size:13px; margin-bottom:14px; background:#fee2e2; color:#ef4444;"></div>
+
+      <div id="customerLoggedInView" style="display:none; text-align:center; padding:10px 0;">
+        <div style="font-size:42px; margin-bottom:10px;">👋</div>
+        <h4 id="customerLoggedInName" style="font-size:18px; margin-bottom:6px;">Welcome!</h4>
+        <p id="customerLoggedInPhone" style="color:#64748b; font-size:14px; margin-bottom:20px;"></p>
+        <button id="customerLogoutBtn" style="background:#ef4444; color:white; border:none; padding:10px 24px; border-radius:8px; font-weight:600; cursor:pointer; width:100%;">Logout</button>
+      </div>
+
+      <form id="customerLoginForm">
+        <div style="margin-bottom:14px;">
+          <label style="display:block; font-size:13px; font-weight:600; margin-bottom:6px;">Mobile Number</label>
+          <input type="tel" id="custLoginPhone" placeholder="10-digit mobile number" required style="width:100%; padding:10px 14px; border:1px solid #cbd5e1; border-radius:8px; font-size:14px; box-sizing:border-box;">
+        </div>
+        <div style="margin-bottom:18px;">
+          <label style="display:block; font-size:13px; font-weight:600; margin-bottom:6px;">Password</label>
+          <input type="password" id="custLoginPassword" placeholder="••••••••" required style="width:100%; padding:10px 14px; border:1px solid #cbd5e1; border-radius:8px; font-size:14px; box-sizing:border-box;">
+        </div>
+        <button type="submit" style="width:100%; background:#059669; color:white; border:none; padding:12px; border-radius:8px; font-weight:700; cursor:pointer;">Login</button>
+        <p style="text-align:center; font-size:13px; margin-top:14px; color:#64748b;">
+          Don't have an account? <a href="#" id="toggleToSignup" style="color:#059669; font-weight:700; text-decoration:none;">Sign Up</a>
+        </p>
+      </form>
+
+      <form id="customerSignupForm" style="display:none;">
+        <div style="margin-bottom:12px;">
+          <label style="display:block; font-size:13px; font-weight:600; margin-bottom:6px;">Full Name</label>
+          <input type="text" id="custSignupName" placeholder="Your Name" required style="width:100%; padding:10px 14px; border:1px solid #cbd5e1; border-radius:8px; font-size:14px; box-sizing:border-box;">
+        </div>
+        <div style="margin-bottom:12px;">
+          <label style="display:block; font-size:13px; font-weight:600; margin-bottom:6px;">Mobile Number</label>
+          <input type="tel" id="custSignupPhone" placeholder="10-digit mobile number" required style="width:100%; padding:10px 14px; border:1px solid #cbd5e1; border-radius:8px; font-size:14px; box-sizing:border-box;">
+        </div>
+        <div style="margin-bottom:18px;">
+          <label style="display:block; font-size:13px; font-weight:600; margin-bottom:6px;">Create Password</label>
+          <input type="password" id="custSignupPassword" placeholder="At least 6 characters" required style="width:100%; padding:10px 14px; border:1px solid #cbd5e1; border-radius:8px; font-size:14px; box-sizing:border-box;">
+        </div>
+        <button type="submit" style="width:100%; background:#059669; color:white; border:none; padding:12px; border-radius:8px; font-weight:700; cursor:pointer;">Create Account</button>
+        <p style="text-align:center; font-size:13px; margin-top:14px; color:#64748b;">
+          Already have an account? <a href="#" id="toggleToLogin" style="color:#059669; font-weight:700; text-decoration:none;">Login</a>
+        </p>
+      </form>
+    </div>
+  </div>
 
   <script src="js/i18n.js"></script>
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>

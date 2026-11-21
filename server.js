@@ -191,7 +191,32 @@ app.post('/api/orders', wrap(async (req, res) => {
     return res.status(400).json({ error: 'Your cart is empty' });
   }
 
-  const order = await localDb.createOrder({
+  const deliveryPin = String(Math.floor(1000 + Math.random() * 9000));
+  const payMethod = String(method || 'COD').toUpperCase();
+  const payStatus = payMethod === 'ONLINE' ? 'Paid' : 'Pending';
+
+  let order = null;
+  if (supabaseDb.isConfigured()) {
+    try {
+      order = await supabaseDb.createOrder({
+        customer,
+        items,
+        subtotal: Number(subtotal || 0),
+        discount: Number(discount || 0),
+        delivery_fee: Number(delivery_fee || 0),
+        total: Number(total || 0),
+        coupon: coupon || null,
+        method: payMethod,
+        etaText: etaText || '2-4 business days',
+        deliveryPin
+      });
+    } catch (e) {
+      console.warn('[Supabase] createOrder error, falling back to localDb:', e.message);
+    }
+  }
+
+  // Also save to localDb for redundancy & instant access
+  const localOrder = await localDb.createOrder({
     customer,
     items,
     subtotal: Number(subtotal || 0),
@@ -199,16 +224,33 @@ app.post('/api/orders', wrap(async (req, res) => {
     delivery_fee: Number(delivery_fee || 0),
     total: Number(total || 0),
     coupon: coupon || null,
-    method: method || 'cod',
+    method: payMethod,
     etaText: etaText || '2-4 business days',
-    razorpayOrderId: null
+    razorpayOrderId: null,
+    deliveryPin
   });
 
-  res.json({ success: true, order });
+  const finalOrder = order || localOrder;
+  finalOrder.delivery_pin = deliveryPin;
+  finalOrder.order_status = 'Placed';
+  finalOrder.payment_status = payStatus;
+  finalOrder.payment_method = payMethod;
+
+  res.json({ success: true, order: finalOrder });
 }));
 
 app.get('/api/track/:q', wrap(async (req, res) => {
-  const results = await localDb.findOrdersByQuery(req.params.q);
+  let results = [];
+  if (supabaseDb.isConfigured()) {
+    try {
+      results = await supabaseDb.findOrdersByQuery(req.params.q);
+    } catch (e) {
+      console.warn('[Supabase] track error, using localDb:', e.message);
+    }
+  }
+  if (!results || results.length === 0) {
+    results = await localDb.findOrdersByQuery(req.params.q);
+  }
   res.json(results || []);
 }));
 
@@ -336,22 +378,168 @@ app.get('/api/admin/me', requireAdmin, wrap(async (req, res) => {
 
 // Admin Orders
 app.get('/api/admin/orders', requireAdmin, wrap(async (req, res) => {
-  const orders = await localDb.getTable('orders');
+  let orders = [];
+  if (supabaseDb.isConfigured()) {
+    try {
+      orders = await supabaseDb.getOrders();
+    } catch (e) {
+      console.warn('[Supabase] getOrders error, using localDb:', e.message);
+    }
+  }
+  if (!orders || orders.length === 0) {
+    orders = await localDb.getTable('orders');
+  }
   res.json(orders || []);
 }));
 
 // Admin Update Order Status
 app.patch('/api/admin/orders/:id', requireAdmin, wrap(async (req, res) => {
-  const { status, payment_status } = req.body;
+  const { status, order_status, payment_status } = req.body;
+  const newStatus = order_status || status;
   const orderId = Number(req.params.id);
+
+  if (supabaseDb.isConfigured()) {
+    try {
+      await supabaseDb.updateOrderStatus(orderId, newStatus, payment_status);
+    } catch (e) {
+      console.warn('[Supabase] updateOrderStatus warning:', e.message);
+    }
+  }
+
   const order = localDb.data.orders.find(o => o.id === orderId);
-  if (!order) return res.status(404).json({ error: 'Order not found' });
+  if (order) {
+    if (newStatus) {
+      order.status = newStatus;
+      order.order_status = newStatus;
+    }
+    if (payment_status) order.payment_status = payment_status;
+    localDb.save();
+  }
 
-  if (status) order.status = status;
-  if (payment_status) order.payment_status = payment_status;
-  localDb.save();
+  res.json({ success: true, order: order || { id: orderId, status: newStatus, payment_status } });
+}));
 
-  res.json({ success: true, order });
+// Admin Verify Delivery PIN
+app.post('/api/admin/orders/:id/verify-pin', requireAdmin, wrap(async (req, res) => {
+  const { pin } = req.body;
+  const orderId = Number(req.params.id);
+  const enteredPin = String(pin || '').trim();
+
+  if (!enteredPin || enteredPin.length !== 4) {
+    return res.status(400).json({ error: 'Please enter a valid 4-digit Delivery PIN' });
+  }
+
+  let verified = false;
+  let orderData = null;
+
+  // Check Supabase if configured
+  if (supabaseDb.isConfigured()) {
+    try {
+      const sbResult = await supabaseDb.verifyDeliveryPin(orderId, enteredPin);
+      if (sbResult.success) {
+        verified = true;
+        orderData = sbResult.order;
+      }
+    } catch (e) {
+      console.warn('[Supabase] verifyDeliveryPin error, checking localDb:', e.message);
+    }
+  }
+
+  // Check / sync with localDb
+  const localOrder = localDb.data.orders.find(o => o.id === orderId);
+  if (localOrder) {
+    if (String(localOrder.delivery_pin).trim() === enteredPin) {
+      localOrder.status = 'Delivered';
+      localOrder.order_status = 'Delivered';
+      localOrder.payment_status = 'Paid';
+      localDb.save();
+      verified = true;
+      orderData = localOrder;
+    }
+  }
+
+  if (!verified) {
+    return res.status(400).json({ error: 'Incorrect Delivery PIN! Please enter the 4-digit PIN provided by the customer.' });
+  }
+
+  res.json({
+    success: true,
+    message: '✓ Delivery PIN verified! Order marked as Delivered and Payment marked as Paid.',
+    order: orderData
+  });
+}));
+
+// Admin Offers & Coupons CRUD
+app.get('/api/admin/offers', requireAdmin, wrap(async (req, res) => {
+  let offers = [];
+  if (supabaseDb.isConfigured()) {
+    try { offers = await supabaseDb.getOffers(); } catch (e) {}
+  }
+  if (!offers || offers.length === 0) {
+    offers = await localDb.getOffers();
+  }
+  res.json(offers || []);
+}));
+
+app.post('/api/admin/offers', requireAdmin, wrap(async (req, res) => {
+  const { code, description, discount_percent, min_order } = req.body;
+  if (!code || !discount_percent) {
+    return res.status(400).json({ error: 'Coupon code and discount percent are required' });
+  }
+
+  const newOffer = {
+    code: String(code).toUpperCase().trim(),
+    description: String(description || '').trim(),
+    discount_percent: Number(discount_percent),
+    min_order: Number(min_order || 0),
+    active: 1
+  };
+
+  if (supabaseDb.isConfigured()) {
+    try { await supabaseDb.createOffer(newOffer); } catch (e) {}
+  }
+  const saved = await localDb.createOffer(newOffer);
+
+  res.json({ success: true, offer: saved });
+}));
+
+app.delete('/api/admin/offers/:id', requireAdmin, wrap(async (req, res) => {
+  const id = Number(req.params.id);
+  if (supabaseDb.isConfigured()) {
+    try { await supabaseDb.deleteOffer(id); } catch (e) {}
+  }
+  await localDb.deleteOffer(id);
+  res.json({ success: true, message: 'Offer deleted successfully' });
+}));
+
+// Admin Themes Management
+app.get('/api/admin/themes', requireAdmin, wrap(async (req, res) => {
+  const s = await getSettings();
+  const currentTheme = s.theme_mode || 'default';
+  const themes = [
+    { key: 'default', name: 'Default Store Theme', desc: 'Clean, modern standard storefront', icon: '🛍️' },
+    { key: 'diwali', name: 'Diwali Festive Grand Sale', desc: 'Gold & festive lights theme with cracker effects', icon: '🪔' },
+    { key: 'eid', name: 'Eid Mubarak Festival', desc: 'Crescent moon & festive stars theme', icon: '🌙' },
+    { key: 'holi', name: 'Holi Colors Celebration', desc: 'Vibrant multi-color festive theme', icon: '🎨' },
+    { key: 'navratri', name: 'Shubh Navratri Festival', desc: 'Pure traditional fasting & festive theme', icon: '🌸' },
+    { key: 'christmas', name: 'Christmas & Year-End Sale', desc: 'Snow & holiday winter theme', icon: '🎄' },
+    { key: 'independence', name: 'Independence Day Special', desc: 'Proudly Indian tricolor celebration', icon: '🇮🇳' },
+    { key: 'newyear', name: 'Happy New Year 2027', desc: 'Confetti & fresh beginnings mega sale', icon: '✨' }
+  ];
+
+  res.json({ currentTheme, themes });
+}));
+
+app.post('/api/admin/theme', requireAdmin, wrap(async (req, res) => {
+  const { theme_key } = req.body;
+  if (!theme_key) return res.status(400).json({ error: 'theme_key is required' });
+
+  await localDb.setSetting('theme_mode', theme_key);
+  if (supabaseDb.isConfigured()) {
+    try { await supabaseDb.setTheme(theme_key); } catch (e) {}
+  }
+
+  res.json({ success: true, message: `Theme switched to '${theme_key}'! Website updated in real-time.`, activeTheme: theme_key });
 }));
 
 // Admin Products CRUD

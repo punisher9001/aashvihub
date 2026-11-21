@@ -1,3 +1,60 @@
+
+// ============================================================
+// Dependent Subcategory & Variant Stock Matrix Management
+// ============================================================
+let globalCatalog = [];
+
+async function loadCategoriesForDropdown() {
+  try {
+    const res = await fetch('/api/catalog');
+    globalCatalog = await res.json();
+    const catSelect = $('#newProdCategory');
+    if (catSelect && globalCatalog && globalCatalog.length) {
+      catSelect.innerHTML = '<option value="">-- Select Category --</option>' + 
+        globalCatalog.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+    }
+  } catch (err) {
+    console.warn('Could not load catalog for admin dropdown:', err);
+  }
+}
+
+function handleCategoryChange(catId) {
+  const subSelect = $('#newProdSubcategory');
+  if (!subSelect) return;
+  subSelect.innerHTML = '<option value="">-- Select Subcategory --</option>';
+  if (!catId) return;
+
+  const foundCat = globalCatalog.find(c => String(c.id) === String(catId));
+  if (foundCat && Array.isArray(foundCat.subs)) {
+    subSelect.innerHTML += foundCat.subs.map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
+  }
+}
+
+function renderVariantRow(name = '', stock = 20) {
+  const container = $('#variantsContainer');
+  if (!container) return;
+  const row = document.createElement('div');
+  row.className = 'variant-matrix-row';
+  row.style.cssText = 'display:grid; grid-template-columns:1fr 1fr auto; gap:8px; align-items:center;';
+  row.innerHTML = `
+    <input type="text" class="form-control var-name" placeholder="Size/Weight (e.g. M, L, 500g)" value="${escapeHtml(name)}" required>
+    <input type="number" class="form-control var-stock" placeholder="Stock Qty" min="0" value="${stock}" required>
+    <button type="button" class="btn btn-danger btn-sm" onclick="this.parentElement.remove()" style="padding:6px 10px;">✕</button>
+  `;
+  container.appendChild(row);
+}
+
+function getVariantsPayload() {
+  const rows = $$('#variantsContainer .variant-matrix-row');
+  const variants = [];
+  rows.forEach(r => {
+    const name = r.querySelector('.var-name')?.value.trim();
+    const stock = Math.max(0, parseInt(r.querySelector('.var-stock')?.value, 10) || 0);
+    if (name) variants.push({ name, stock });
+  });
+  return variants;
+}
+
 // ============================================================
 // Aashvi Hub - Admin Dashboard Controller
 // Founder & Director: Dr Mukul Kumar (Mob: 8988227729)
@@ -46,11 +103,17 @@ function setupEventListeners() {
   // Add product modal controls
   $('#openAddProductBtn')?.addEventListener('click', () => {
     $('#addProductModal')?.classList.add('open');
+    const vCont = $('#variantsContainer');
+    if (vCont && vCont.children.length === 0) {
+      renderVariantRow('Standard', 20);
+    }
   });
   $('#closeAddProductBtn')?.addEventListener('click', () => {
     $('#addProductModal')?.classList.remove('open');
   });
   $('#addProductForm')?.addEventListener('submit', handleAddProduct);
+  $('#newProdCategory')?.addEventListener('change', (e) => handleCategoryChange(e.target.value));
+  $('#addVariantRowBtn')?.addEventListener('click', () => renderVariantRow('', 10));
 
   // Add offer modal controls
   $('#openAddOfferBtn')?.addEventListener('click', () => {
@@ -138,6 +201,7 @@ async function loadDashboardData() {
   loadThemes();
   loadProducts();
   loadCategories();
+  loadCategoriesForDropdown();
   loadSettings();
 }
 
@@ -389,15 +453,20 @@ async function loadProducts() {
 
 async function handleAddProduct(e) {
   e.preventDefault();
+  const variants = getVariantsPayload();
+  const subcategoryId = Number($('#newProdSubcategory')?.value || $('#newProdCategory')?.value || 1);
+  const totalStock = variants.length > 0 ? variants.reduce((s, v) => s + v.stock, 0) : Number($('#newProdStock')?.value || 50);
   const newProd = {
     name: $('#newProdName').value,
-    subcategory_id: Number($('#newProdCategory').value),
+    category_id: Number($('#newProdCategory').value) || null,
+    subcategory_id: subcategoryId,
     price: Number($('#newProdPrice').value),
     mrp: Number($('#newProdMrp').value) || Number($('#newProdPrice').value),
-    stock: Number($('#newProdStock').value),
-    unit: $('#newProdUnit').value,
+    stock: totalStock,
+    unit: $('#newProdUnit')?.value || 'Standard',
     image: $('#newProdImage').value,
-    description: $('#newProdDesc').value
+    description: $('#newProdDesc').value,
+    variants: variants
   };
 
   try {

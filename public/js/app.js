@@ -1,3 +1,29 @@
+
+// Variant selection helper
+window.onVariantSelected = function(productId, variantName) {
+  const sel = document.querySelector(`#variantSelect_${productId}`);
+  const opt = sel ? sel.options[sel.selectedIndex] : null;
+  const stock = opt ? parseInt(opt.dataset.stock, 10) : 0;
+  const addBtn = document.querySelector(`#addBtn_${productId}`);
+  const oosBadge = document.querySelector(`#oosBadge_${productId}`);
+
+  if (stock <= 0) {
+    if (addBtn) {
+      addBtn.disabled = true;
+      addBtn.style.opacity = '0.5';
+      addBtn.textContent = 'Out of Stock';
+    }
+    if (oosBadge) oosBadge.style.display = 'inline-block';
+  } else {
+    if (addBtn) {
+      addBtn.disabled = false;
+      addBtn.style.opacity = '1';
+      addBtn.textContent = '+ Add to Cart';
+    }
+    if (oosBadge) oosBadge.style.display = 'none';
+  }
+};
+
 // ==========================================================================
 // Aashvi Hub - Core Store Logic
 // Founder & Director: Dr Mukul Kumar (Mob: 8988227729)

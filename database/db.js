@@ -550,8 +550,12 @@ class LocalDatabase {
     return def || { theme_key: 'default', name: s.shop_name || 'Aashvi Hub' };
   }
 
-  async createOrder({ customer, items, subtotal, discount, delivery_fee, total, coupon, method, etaText, razorpayOrderId }) {
+  async createOrder({ customer, items, subtotal, discount, delivery_fee, total, coupon, method, etaText, razorpayOrderId, deliveryPin }) {
     const nextId = (this.data.orders.reduce((max, o) => Math.max(max, o.id || 0), 0)) + 1;
+    const pin = deliveryPin || String(Math.floor(1000 + Math.random() * 9000));
+    const payMethod = String(method || 'COD').toUpperCase();
+    const payStatus = payMethod === 'ONLINE' ? 'Paid' : 'Pending';
+
     const order = {
       id: nextId,
       customer_name: customer.name,
@@ -563,12 +567,14 @@ class LocalDatabase {
       delivery_fee,
       total,
       coupon,
-      payment_method: method,
-      payment_status: 'pending',
+      payment_method: payMethod,
+      payment_status: payStatus,
       razorpay_order_id: razorpayOrderId,
       razorpay_payment_id: null,
-      status: method === 'cod' ? 'confirmed' : 'pending',
-      eta_text: etaText,
+      status: 'Placed',
+      order_status: 'Placed',
+      delivery_pin: pin,
+      eta_text: etaText || '2-4 business days',
       created_at: new Date().toISOString()
     };
 
@@ -591,6 +597,20 @@ class LocalDatabase {
     this.data.orders.unshift(order);
     this.save();
     return order;
+  }
+
+  async verifyDeliveryPin(id, pin) {
+    const o = this.data.orders.find(x => x.id === Number(id));
+    if (!o) return { success: false, error: 'Order not found' };
+    const entered = String(pin || '').trim();
+    if (!entered || String(o.delivery_pin).trim() !== entered) {
+      return { success: false, error: 'Incorrect 4-digit Delivery PIN' };
+    }
+    o.status = 'Delivered';
+    o.order_status = 'Delivered';
+    o.payment_status = 'Paid';
+    this.save();
+    return { success: true, order: o };
   }
 
   async getOrder(id) {
@@ -623,14 +643,47 @@ class LocalDatabase {
     return false;
   }
 
-  async updateOrderStatus(id, status) {
+  async updateOrderStatus(id, status, paymentStatus) {
     const o = this.data.orders.find(x => x.id === Number(id));
     if (o) {
       o.status = status;
+      o.order_status = status;
+      if (paymentStatus) o.payment_status = paymentStatus;
       this.save();
       return true;
     }
     return false;
+  }
+
+  async getOffers() {
+    return this.data.offers || [];
+  }
+
+  async createOffer(offer) {
+    if (!this.data.offers) this.data.offers = [];
+    const nextId = (this.data.offers.reduce((max, o) => Math.max(max, o.id || 0), 0)) + 1;
+    const newOffer = {
+      id: nextId,
+      code: String(offer.code || '').toUpperCase().trim(),
+      description: String(offer.description || '').trim(),
+      discount_percent: Number(offer.discount_percent || 0),
+      min_order: Number(offer.min_order || 0),
+      active: offer.active !== undefined ? (offer.active ? 1 : 0) : 1
+    };
+    this.data.offers.push(newOffer);
+    this.save();
+    return newOffer;
+  }
+
+  async deleteOffer(id) {
+    if (!this.data.offers) return false;
+    this.data.offers = this.data.offers.filter(o => o.id !== Number(id));
+    this.save();
+    return true;
+  }
+
+  async getThemes() {
+    return this.data.themes || [];
   }
 
   // Admin generic CRUD helpers

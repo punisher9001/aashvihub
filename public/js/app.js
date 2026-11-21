@@ -1,3 +1,12 @@
+
+function scrollToTopInstant() {
+  try {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  } catch (e) {
+    window.scrollTo(0, 0);
+  }
+}
+
 // User selected active variant per product (productId -> variantObj)
 const selectedVariants = {};
 
@@ -246,6 +255,7 @@ async function openCategory(catId, subId = null) {
   st.view = 'category';
   st.cat = catId;
   st.sub = subId;
+  scrollToTopInstant();
 
   // View Visibility Switching
   const homeView = $('#homeView');
@@ -307,7 +317,7 @@ function renderSubs() {
   const container = $('#subs');
   if (!container) return;
 
-  const currentCat = st.catalog.find(x => x.id === st.cat);
+  const currentCat = st.catalog.find(x => String(x.id) === String(st.cat));
   if (!currentCat) {
     container.innerHTML = '';
     return;
@@ -324,7 +334,7 @@ function renderSubs() {
   `;
 
   const subItems = (currentCat.subs || []).map(s => {
-    const isSubActive = st.sub === s.id;
+    const isSubActive = String(st.sub) === String(s.id);
     const subName = T('sub_' + s.id) || s.name;
     return `
       <button class="subnav-tab-item ${isSubActive ? 'active' : ''}" data-id="${s.id}">
@@ -341,26 +351,72 @@ function renderSubs() {
       st.sub = btn.dataset.id ? +btn.dataset.id : null;
       renderSubs();
       loadCategoryProducts();
+      scrollToTopInstant();
     };
   });
 }
 
 // Fetch and Render Products for Active Category & Subcategory
 async function loadCategoryProducts() {
-  const p = new URLSearchParams();
-  if (st.cat) p.set('cat', st.cat);
-  if (st.sub) p.set('sub', st.sub);
-
-  const currentCat = st.catalog.find(x => x.id === st.cat);
+  const currentCat = st.catalog.find(x => String(x.id) === String(st.cat)) || null;
   const catName = currentCat ? (T('cat_' + currentCat.id) || currentCat.name) : 'Category';
-  const subObj = currentCat && currentCat.subs && currentCat.subs.find(x => x.id === st.sub);
+  const subObj = currentCat && currentCat.subs && currentCat.subs.find(x => String(x.id) === String(st.sub));
   const subName = subObj ? (T('sub_' + subObj.id) || subObj.name) : `All ${catName}`;
 
   const headerEl = $('#catSectionHeader');
   if (headerEl) headerEl.textContent = subName;
 
   try {
-    st.categoryProducts = await api('/api/products?' + p.toString());
+    // Fetch all products with cache-busting timestamp to avoid stale caches
+    const allProds = await api('/api/products?_t=' + Date.now());
+
+    // Comprehensive client-side multi-field matching:
+    // Matches by category_id, subcategory_id, name strings, and parent category association
+    st.categoryProducts = (allProds || []).filter(p => {
+      // 1. Subcategory filter active
+      if (st.sub) {
+        const subIdStr = String(st.sub).trim().toLowerCase();
+        const subNameStr = subObj ? String(subObj.name || '').trim().toLowerCase() : '';
+
+        // Match by subcategory_id (number or string)
+        if (p.subcategory_id !== undefined && String(p.subcategory_id).trim() === subIdStr) return true;
+        if (p.sub_category_id !== undefined && String(p.sub_category_id).trim() === subIdStr) return true;
+
+        // Match by subcategory name case-insensitively
+        if (p.subcategory && String(p.subcategory).trim().toLowerCase() === subNameStr) return true;
+        if (p.sub_category && String(p.sub_category).trim().toLowerCase() === subNameStr) return true;
+        if (p.sub && String(p.sub).trim().toLowerCase() === subNameStr) return true;
+
+        return false;
+      }
+
+      // 2. Main Category filter active (All Subcategories in this category)
+      if (st.cat) {
+        const catIdStr = String(st.cat).trim().toLowerCase();
+        const catNameStr = currentCat ? String(currentCat.name || '').trim().toLowerCase() : '';
+
+        // Direct category_id match
+        if (p.category_id !== undefined && String(p.category_id).trim() === catIdStr) return true;
+
+        // Direct category name match
+        if (p.category && String(p.category).trim().toLowerCase() === catNameStr) return true;
+
+        // Match if product's subcategory belongs to this category
+        if (currentCat && Array.isArray(currentCat.subs)) {
+          const catSubIds = currentCat.subs.map(s => String(s.id).trim());
+          const catSubNames = currentCat.subs.map(s => String(s.name || '').trim().toLowerCase());
+
+          if (p.subcategory_id !== undefined && catSubIds.includes(String(p.subcategory_id).trim())) return true;
+          if (p.sub_category_id !== undefined && catSubIds.includes(String(p.sub_category_id).trim())) return true;
+          if (p.subcategory && catSubNames.includes(String(p.subcategory).trim().toLowerCase())) return true;
+          if (p.sub_category && catSubNames.includes(String(p.sub_category).trim().toLowerCase())) return true;
+        }
+
+        return false;
+      }
+
+      return true;
+    });
   } catch (err) {
     console.error('Error fetching category products:', err);
     st.categoryProducts = [];
@@ -401,7 +457,7 @@ function goToHome() {
   if (searchView) searchView.hidden = true;
 
   loadHomeProducts();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  scrollToTopInstant();
 }
 
 // Fetch and Render Home Featured Products
@@ -440,6 +496,7 @@ function handleSearchInput() {
 
   if (st.view !== 'search') {
     st.prevView = st.view;
+    scrollToTopInstant();
   }
   st.view = 'search';
 

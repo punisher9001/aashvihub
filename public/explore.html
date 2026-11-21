@@ -1,42 +1,61 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8">
-  <title>Explore Categories</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Explore Categories | Aashvi Hub</title>
   <link rel="stylesheet" href="/css/style.css">
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f8fafc; padding: 24px 16px; max-width: 900px; margin: 0 auto; }
+    .header-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #e2e8f0; }
+    .header-nav a { text-decoration: none; color: #059669; font-weight: 700; font-size: 15px; }
+    .page-title { font-size: 26px; font-weight: 800; color: #0f172a; margin-bottom: 8px; }
+    .page-sub { font-size: 14px; color: #64748b; margin-bottom: 24px; }
+    .cat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+    .cat-card { background: white; border: 1px solid #e2e8f0; border-radius: 14px; padding: 22px; text-decoration: none; color: #0f172a; display: flex; align-items: center; gap: 16px; transition: all 0.2s; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.03); }
+    .cat-card:hover { transform: translateY(-3px); border-color: #059669; box-shadow: 0 10px 20px -5px rgba(5,150,105,0.15); }
+    .cat-icon { font-size: 32px; background: #ecfdf5; width: 56px; height: 56px; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+    .cat-name { font-weight: 700; font-size: 16px; }
+    .cat-count { font-size: 12px; color: #64748b; margin-top: 3px; }
+  </style>
 </head>
-
 <body>
-  <h1>Explore</h1>
-  <div id="categories"></div>
+  <div class="header-nav">
+    <a href="/">← Back to Store</a>
+    <span style="font-weight:800; color:#0f172a;">Aashvi Hub</span>
+  </div>
+
+  <h1 class="page-title">Explore Store Categories</h1>
+  <p class="page-sub">Click any category to browse its products and subcategories</p>
+
+  <div id="categories" class="cat-grid"></div>
 
   <script>
-    // Fetch categories from Supabase (or any API endpoint you have)
     async function loadCategories() {
+      const container = document.getElementById('categories');
       try {
-        const res = await fetch('/api/categories');
-        // If API fails, show fallback categories
-      if (!data || data.length === 0) {
-        data = [
-          { id: 'fallback1', name: 'Sample Category 1' },
-          { id: 'fallback2', name: 'Sample Category 2' }
-        ];
-      }
-        const container = document.getElementById('categories');
-        data.forEach(cat => {
-          const a = document.createElement('a');
-          a.href = `/category.html?cat=${encodeURIComponent(cat.id)}`;
-          a.textContent = cat.name;
-          a.className = 'explore-category';
-          container.appendChild(a);
-        });
+        const res = await fetch('/api/catalog');
+        let data = await res.json();
+        if (!Array.isArray(data) || data.length === 0) {
+          const res2 = await fetch('/api/categories');
+          data = await res2.json();
+        }
+
+        container.innerHTML = (data || []).map(cat => `
+          <a href="/category.html?cat=${encodeURIComponent(cat.id)}" class="cat-card">
+            <div class="cat-icon">${cat.icon || '🛍️'}</div>
+            <div>
+              <div class="cat-name">${cat.name}</div>
+              <div class="cat-count">${(cat.subs && cat.subs.length) ? cat.subs.length + ' Subcategories' : 'View Products →'}</div>
+            </div>
+          </a>
+        `).join('');
       } catch (e) {
         console.error('Failed to load categories', e);
+        container.innerHTML = '<p style="color:#ef4444;">Unable to load categories. <a href="/">Return to Home</a></p>';
       }
     }
     loadCategories();
   </script>
 </body>
-
 </html>

@@ -490,26 +490,48 @@ class LocalDatabase {
   async getProducts({ cat, sub, q } = {}) {
     let list = this.data.products.filter(p => p.is_available);
     if (sub) {
-      list = list.filter(p => p.subcategory_id === Number(sub));
+      const targetSub = String(sub).trim().toLowerCase();
+      list = list.filter(p => {
+        return String(p.subcategory_id) === String(sub) ||
+               String(p.sub_category_id) === String(sub) ||
+               (p.subcategory && String(p.subcategory).toLowerCase() === targetSub) ||
+               (p.sub_category && String(p.sub_category).toLowerCase() === targetSub);
+      });
     } else if (cat) {
+      const targetCat = String(cat).trim().toLowerCase();
       const allowedSubs = this.data.subcategories
-        .filter(s => s.category_id === Number(cat))
-        .map(s => s.id);
-      list = list.filter(p => allowedSubs.includes(p.subcategory_id));
+        .filter(s => String(s.category_id) === String(cat) || (s.category && String(s.category).toLowerCase() === targetCat))
+        .map(s => String(s.id));
+      list = list.filter(p => {
+        if (p.category_id && String(p.category_id) === String(cat)) return true;
+        if (p.category && String(p.category).toLowerCase() === targetCat) return true;
+        if (allowedSubs.includes(String(p.subcategory_id))) return true;
+        return false;
+      });
     }
     if (q) {
-      const term = String(q).toLowerCase();
+      const term = String(q).toLowerCase().trim();
       list = list.filter(p =>
-        p.name.toLowerCase().includes(term) ||
-        (p.description && p.description.toLowerCase().includes(term))
+        (p.name && p.name.toLowerCase().includes(term)) ||
+        (p.description && p.description.toLowerCase().includes(term)) ||
+        (p.unit && p.unit.toLowerCase().includes(term))
       );
     }
-    return list.map(p => ({
-      ...p,
-      available: p.is_available && p.stock > 0,
-      mrp: Number(p.mrp),
-      price: Number(p.price)
-    }));
+    return list.map(p => {
+      let variants = p.variants;
+      if (!variants || !variants.length) {
+        variants = [{ name: p.unit || 'Standard', stock: Number(p.stock || 0), price: Number(p.price || 0) }];
+      }
+      const totalStock = variants.reduce((s, v) => s + (Number(v.stock) || 0), 0);
+      return {
+        ...p,
+        variants,
+        stock: totalStock,
+        available: Boolean(p.is_available && totalStock > 0),
+        mrp: Number(p.mrp || p.price || 0),
+        price: Number(p.price || 0)
+      };
+    });
   }
 
   async getProductById(id) {

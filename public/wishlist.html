@@ -1,52 +1,97 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>My Wishlist</title>
-    <link rel="stylesheet" href="/css/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Wishlist | Aashvi Hub</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f8fafc; padding: 24px 16px; max-width: 800px; margin: 0 auto; color: #0f172a; }
+    .header-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #e2e8f0; }
+    .header-nav a { text-decoration: none; color: #059669; font-weight: 700; font-size: 15px; }
+    .page-title { font-size: 26px; font-weight: 800; color: #0f172a; margin-bottom: 6px; }
+    .wishlist-list { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
+    .wishlist-card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; display: flex; align-items: center; gap: 16px; }
+    .wishlist-img { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; }
+    .wishlist-info { flex: 1; }
+    .wishlist-name { font-weight: 700; font-size: 15px; }
+    .wishlist-price { font-weight: 800; color: #059669; margin-top: 4px; }
+    .btn-add-cart { background: #059669; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 13px; }
+    .btn-remove { background: #fee2e2; color: #ef4444; border: none; padding: 8px 12px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 13px; }
+    .empty-box { text-align: center; padding: 60px 20px; color: #64748b; }
+  </style>
 </head>
 <body>
-    <h1>My Wishlist</h1>
-    <div id="wishlist"></div>
+  <div class="header-nav">
+    <a href="/">← Back to Store</a>
+    <span style="font-weight:800;">Aashvi Hub 🛍️</span>
+  </div>
 
-    <script>
-function renderWishlist() {
-    const list = JSON.parse(localStorage.getItem('wishlist') || '[]');
-    const container = document.getElementById('wishlist');
-    container.innerHTML = '';
+  <h1 class="page-title">❤️ My Saved Wishlist</h1>
+  <p style="color:#64748b; font-size:14px;">Products you've saved to buy later.</p>
 
-    if (list.length === 0) {
-        container.textContent = 'Your wishlist is empty.';
-        return;
+  <div id="wishlist" class="wishlist-list"></div>
+
+  <script>
+    function getWishlist() {
+      const w1 = JSON.parse(localStorage.getItem('aashvi_wishlist') || '[]');
+      const w2 = JSON.parse(localStorage.getItem('wishlist') || '[]');
+      const map = new Map();
+      [...w1, ...w2].forEach(item => map.set(item.id, item));
+      return Array.from(map.values());
     }
 
-    list.forEach(item => {
-        const div = document.createElement('div');
-        div.className = 'wishlist-item';
-        div.innerHTML = `
-            <span>${item.name}</span>
-            <button data-id="${item.id}">Remove</button>
+    function saveWishlist(list) {
+      localStorage.setItem('aashvi_wishlist', JSON.stringify(list));
+      localStorage.setItem('wishlist', JSON.stringify(list));
+    }
+
+    function renderWishlist() {
+      const list = getWishlist();
+      const container = document.getElementById('wishlist');
+
+      if (list.length === 0) {
+        container.innerHTML = `
+          <div class="empty-box">
+            <div style="font-size:54px; margin-bottom:12px;">🤍</div>
+            <h3 style="color:#0f172a; margin-bottom:6px;">Your Wishlist is Empty</h3>
+            <p>Save items with the heart button while shopping to find them here easily.</p>
+            <br>
+            <a href="/" style="display:inline-block; background:#059669; color:white; padding:10px 20px; border-radius:8px; text-decoration:none; font-weight:700;">Start Shopping</a>
+          </div>
         `;
-        container.appendChild(div);
-    });
+        return;
+      }
 
-    container.addEventListener('click', (e) => {
-        if (e.target.tagName === 'BUTTON') {
-            const id = e.target.dataset.id;
-            removeFromWishlist(id);
-        }
-    });
-}
+      container.innerHTML = list.map(item => `
+        <div class="wishlist-card">
+          <img src="${item.image || 'https://via.placeholder.com/64'}" class="wishlist-img" alt="${item.name}">
+          <div class="wishlist-info">
+            <div class="wishlist-name">${item.name}</div>
+            <div class="wishlist-price">₹${item.price}</div>
+          </div>
+          <button class="btn-add-cart" onclick="addToCart(${item.id})">+ Add to Cart</button>
+          <button class="btn-remove" onclick="removeItem(${item.id})">Remove</button>
+        </div>
+      `).join('');
+    }
 
-function removeFromWishlist(id) {
-    let list = JSON.parse(localStorage.getItem('wishlist') || '[]');
-    list = list.filter(i => i.id !== id);
-    localStorage.setItem('wishlist', JSON.stringify(list));
+    function removeItem(id) {
+      let list = getWishlist().filter(i => i.id !== id);
+      saveWishlist(list);
+      renderWishlist();
+    }
+
+    function addToCart(id) {
+      let cart = {};
+      try { cart = JSON.parse(localStorage.getItem('cart') || '{}'); } catch { cart = {}; }
+      if (!cart[id]) cart[id] = { id, qty: 1 };
+      else cart[id].qty++;
+      localStorage.setItem('cart', JSON.stringify(cart));
+      alert('Added to Cart! 🛍️');
+    }
+
     renderWishlist();
-}
-
-// Initial render
-renderWishlist();
-    </script>
+  </script>
 </body>
 </html>

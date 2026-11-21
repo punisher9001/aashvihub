@@ -1,7 +1,4 @@
 
-// ============================================================
-// Enhanced Category-Aware Size & Weight/Gram Variant Matrix
-// ============================================================
 let globalCatalog = [];
 let allAdminProducts = [];
 

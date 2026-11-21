@@ -3,7 +3,7 @@
  * Uses native fetch (Node 18+) against Supabase PostgREST API.
  */
 
-const SUPABASE_URL = (process.env.SUPABASE_URL || '').replace(/\/+/ , '');
+const SUPABASE_URL = (process.env.SUPABASE_URL || '').replace(/\/+$/, '');
 const SUPABASE_KEY = process.env.SUPABASE_KEY || process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
 const isConfigured = () => Boolean(SUPABASE_URL && SUPABASE_KEY);
@@ -165,6 +165,188 @@ const supabaseDb = {
       method: 'POST',
       body: { username, password_hash: passwordHash }
     });
+  },
+
+  // ---------- Orders & Delivery PIN System ----------
+  async createOrder({ customer, items, subtotal, discount, delivery_fee, total, coupon, method, etaText, deliveryPin }) {
+    const pin = deliveryPin || String(Math.floor(1000 + Math.random() * 9000));
+    const payMethod = String(method || 'COD').toUpperCase();
+    const payStatus = payMethod === 'ONLINE' ? 'Paid' : 'Pending';
+
+    const orderPayload = {
+      customer_name: customer.name,
+      phone: customer.phone,
+      address: customer.address,
+      pincode: customer.pincode,
+      subtotal: Number(subtotal || 0),
+      discount: Number(discount || 0),
+      delivery_fee: Number(delivery_fee || 0),
+      total: Number(total || 0),
+      coupon: coupon || null,
+      payment_method: payMethod,
+      payment_status: payStatus,
+      status: 'Placed',
+      order_status: 'Placed',
+      delivery_pin: pin,
+      eta_text: etaText || '2-4 business days'
+    };
+
+    const insertedOrders = await sbFetch('/orders', {
+      method: 'POST',
+      body: orderPayload
+    });
+
+    const newOrder = Array.isArray(insertedOrders) ? insertedOrders[0] : insertedOrders;
+    const orderId = newOrder?.id;
+
+    if (orderId && Array.isArray(items) && items.length > 0) {
+      const orderItemsPayload = items.map(it => ({
+        order_id: orderId,
+        product_id: it.id,
+        name: it.name || `Product #${it.id}`,
+        price: Number(it.price || 0),
+        qty: Number(it.qty || 1)
+      }));
+
+      await sbFetch('/order_items', {
+        method: 'POST',
+        body: orderItemsPayload
+      }).catch(e => console.warn('[Supabase] order_items insert warning:', e.message));
+    }
+
+    return newOrder || { ...orderPayload, id: Date.now() };
+  },
+
+  async getOrders() {
+    try {
+      const [orders, items] = await Promise.all([
+        sbFetch('/orders?select=*&order=id.desc&limit=100'),
+        sbFetch('/order_items?select=*&order=id.asc')
+      ]);
+      return (orders || []).map(o => {
+        const orderItems = (items || []).filter(i => String(i.order_id) === String(o.id));
+        const itemsStr = orderItems.map(i => `${i.name} x${i.qty}`).join(', ');
+        return {
+          ...o,
+          order_status: o.order_status || o.status || 'Placed',
+          payment_status: o.payment_status || 'Pending',
+          payment_method: o.payment_method || 'COD',
+          items: itemsStr || 'Items ordered',
+          itemsList: orderItems
+        };
+      });
+    } catch (e) {
+      console.error('[Supabase] getOrders error:', e.message);
+      return [];
+    }
+  },
+
+  async findOrdersByQuery(query) {
+    try {
+      const clean = String(query).trim();
+      let filter = `or=(phone.ilike.*${encodeURIComponent(clean)}*,customer_name.ilike.*${encodeURIComponent(clean)}*)`;
+      if (/^\d+$/.test(clean)) {
+        filter = `or=(id.eq.${clean},phone.ilike.*${encodeURIComponent(clean)}*,customer_name.ilike.*${encodeURIComponent(clean)}*)`;
+      }
+      const [orders, items] = await Promise.all([
+        sbFetch(`/orders?select=*&${filter}&order=id.desc&limit=20`),
+        sbFetch('/order_items?select=*')
+      ]);
+      return (orders || []).map(o => {
+        const orderItems = (items || []).filter(i => String(i.order_id) === String(o.id));
+        return {
+          ...o,
+          order_status: o.order_status || o.status || 'Placed',
+          payment_status: o.payment_status || 'Pending',
+          payment_method: o.payment_method || 'COD',
+          itemsList: orderItems
+        };
+      });
+    } catch (e) {
+      console.error('[Supabase] findOrdersByQuery error:', e.message);
+      return [];
+    }
+  },
+
+  async verifyDeliveryPin(id, pin) {
+    try {
+      const rows = await sbFetch(`/orders?id=eq.${encodeURIComponent(id)}&select=*&limit=1`);
+      if (!rows || !rows[0]) return { success: false, error: 'Order not found' };
+      const order = rows[0];
+      const entered = String(pin || '').trim();
+      if (!entered || String(order.delivery_pin).trim() !== entered) {
+        return { success: false, error: 'Incorrect 4-digit Delivery PIN' };
+      }
+      const updated = await sbFetch(`/orders?id=eq.${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        body: {
+          status: 'Delivered',
+          order_status: 'Delivered',
+          payment_status: 'Paid'
+        }
+      });
+      return { success: true, order: Array.isArray(updated) ? updated[0] : order };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  },
+
+  async updateOrderStatus(id, status, paymentStatus) {
+    try {
+      const body = { status, order_status: status };
+      if (paymentStatus) body.payment_status = paymentStatus;
+      await sbFetch(`/orders?id=eq.${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        body
+      });
+      return true;
+    } catch (e) {
+      console.error('[Supabase] updateOrderStatus error:', e.message);
+      return false;
+    }
+  },
+
+  // ---------- Offers Management ----------
+  async getOffers() {
+    try {
+      const rows = await sbFetch('/offers?select=*&order=id.desc');
+      return rows || [];
+    } catch (e) {
+      return [];
+    }
+  },
+
+  async createOffer(offer) {
+    return sbFetch('/offers', {
+      method: 'POST',
+      body: {
+        code: String(offer.code || '').toUpperCase().trim(),
+        description: String(offer.description || '').trim(),
+        discount_percent: Number(offer.discount_percent || 0),
+        min_order: Number(offer.min_order || 0),
+        active: offer.active !== undefined ? Boolean(offer.active) : true
+      }
+    });
+  },
+
+  async deleteOffer(id) {
+    return sbFetch(`/offers?id=eq.${encodeURIComponent(id)}`, {
+      method: 'DELETE'
+    });
+  },
+
+  // ---------- Themes Management ----------
+  async getThemes() {
+    try {
+      const rows = await sbFetch('/themes?select=*&order=id.asc');
+      return rows || [];
+    } catch (e) {
+      return [];
+    }
+  },
+
+  async setTheme(themeKey) {
+    return this.setSetting('theme_mode', themeKey);
   }
 };
 

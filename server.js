@@ -236,6 +236,24 @@ app.post('/api/orders', wrap(async (req, res) => {
   finalOrder.payment_status = payStatus;
   finalOrder.payment_method = payMethod;
 
+  
+    // Auto-deduct stock for specific variants across products
+    if (Array.isArray(items)) {
+      for (const item of items) {
+        const pId = item.id;
+        const qty = Number(item.qty || 1);
+        const varName = item.variant || item.unit || 'Standard';
+        if (supabaseDb.isConfigured()) {
+          supabaseDb.deductProductStock(pId, qty, varName).catch(e => console.warn('Supabase stock deduction warn:', e.message));
+        }
+        try {
+          localDb.deductProductStock(pId, qty, varName);
+        } catch (e) {
+          console.warn('LocalDB stock deduction warn:', e.message);
+        }
+      }
+    }
+
   res.json({ success: true, order: finalOrder });
 }));
 
@@ -548,6 +566,10 @@ app.get('/api/admin/products', requireAdmin, wrap(async (req, res) => {
 }));
 
 app.post('/api/admin/products', requireAdmin, wrap(async (req, res) => {
+  const prodData = req.body;
+  if (Array.isArray(req.body.variants)) prodData.variants = req.body.variants;
+  if (req.body.category_id) prodData.category_id = Number(req.body.category_id);
+
   const { name, subcategory_id, price, mrp, stock, image, description, details } = req.body;
   if (!name || !price) return res.status(400).json({ error: 'Product name and price are required' });
 

@@ -400,20 +400,14 @@
       <form id="adminLoginForm">
         <div class="form-group">
           <label>Admin Username</label>
-          <input type="text" id="usernameInput" class="form-control" placeholder="admin" value="admin" required autocomplete="username">
+          <input type="text" id="usernameInput" class="form-control" placeholder="Enter username" required autocomplete="username">
         </div>
         <div class="form-group">
           <label>Password</label>
-          <input type="password" id="passwordInput" class="form-control" placeholder="••••••••" value="admin123" required autocomplete="current-password">
+          <input type="password" id="passwordInput" class="form-control" placeholder="Enter password" required autocomplete="current-password">
         </div>
         <button type="submit" class="btn btn-primary" id="loginBtn">Login to Admin Portal</button>
       </form>
-
-      <div class="quick-box">
-        Default Credentials: <b>admin</b> / <b>admin123</b>
-        <br><br>
-        <button type="button" class="btn btn-secondary btn-sm" id="quickFillBtn">⚡ 1-Click Auto Fill</button>
-      </div>
     </div>
   </div>
 
@@ -459,6 +453,8 @@
       <!-- Tabs Navigation -->
       <div class="tabs-bar">
         <button class="tab-btn active" data-tab="tabOrders">📦 Customer Orders</button>
+        <button class="tab-btn" data-tab="tabOffers">🎁 Offers &amp; Coupons</button>
+        <button class="tab-btn" data-tab="tabThemes">🎨 Themes &amp; Festivals</button>
         <button class="tab-btn" data-tab="tabProducts">🛍️ Manage Products</button>
         <button class="tab-btn" data-tab="tabCategories">📂 Categories</button>
         <button class="tab-btn" data-tab="tabSettings">⚙️ Store Settings</button>
@@ -482,14 +478,59 @@
                   <th>Items</th>
                   <th>Total</th>
                   <th>Payment</th>
-                  <th>Status</th>
-                  <th>Action</th>
+                  <th>Order Status</th>
+                  <th>Verify Delivery PIN</th>
                 </tr>
               </thead>
               <tbody id="ordersTableBody">
                 <tr><td colspan="9" style="text-align:center; padding:30px; color:var(--text-muted);">No orders yet. Orders placed by customers will show here.</td></tr>
               </tbody>
             </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tab: Offers & Coupons -->
+      <section id="tabOffers" class="tab-pane">
+        <div class="table-container">
+          <div class="table-header">
+            <div>
+              <div class="table-title">🎁 Promotional Offers &amp; Coupons</div>
+              <div style="font-size:12px; color:var(--text-muted); margin-top:2px;">Discounts and promo codes applied during checkout</div>
+            </div>
+            <button class="btn btn-primary btn-sm" id="openAddOfferBtn" style="width:auto;">+ Add New Offer</button>
+          </div>
+          <div style="overflow-x: auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Offer Code</th>
+                  <th>Discount %</th>
+                  <th>Min Order (₹)</th>
+                  <th>Expiry Date</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="offersTableBody">
+                <!-- Injected via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tab: Themes & Festivals -->
+      <section id="tabThemes" class="tab-pane">
+        <div class="table-container" style="padding: 24px;">
+          <div style="margin-bottom: 20px;">
+            <div class="table-title">🎨 Festive &amp; Seasonal Store Themes</div>
+            <div style="font-size:13px; color:var(--text-muted); margin-top:4px;">
+              Select any festive or seasonal theme to change your store's appearance and animated celebration effects in real-time.
+            </div>
+          </div>
+          <div id="themesGrid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 18px;">
+            <!-- Injected via JS -->
           </div>
         </div>
       </section>
@@ -634,6 +675,37 @@
           <textarea id="newProdDesc" class="form-control" rows="2" placeholder="Freshly packed product..."></textarea>
         </div>
         <button type="submit" class="btn btn-primary">Create Product</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Add Offer -->
+  <div id="addOfferModal" class="modal-backdrop">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div class="modal-title">🎁 Create New Promotional Offer</div>
+        <button class="modal-close" id="closeAddOfferBtn">✕</button>
+      </div>
+      <form id="addOfferForm">
+        <div class="form-group">
+          <label>Coupon Code * (e.g. FESTIVE20, SAVE50)</label>
+          <input type="text" id="newOfferCode" class="form-control" required placeholder="e.g. DIWALI20" style="text-transform:uppercase; font-weight:700; letter-spacing:1px;">
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <div class="form-group">
+            <label>Discount Percentage (%) *</label>
+            <input type="number" id="newOfferPercent" class="form-control" required min="1" max="90" placeholder="20">
+          </div>
+          <div class="form-group">
+            <label>Minimum Order Amount (₹)</label>
+            <input type="number" id="newOfferMinOrder" class="form-control" min="0" value="0" placeholder="0">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Expiry Date</label>
+          <input type="date" id="newOfferExpires" class="form-control">
+        </div>
+        <button type="submit" class="btn btn-primary">Save &amp; Activate Offer</button>
       </form>
     </div>
   </div>

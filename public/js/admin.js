@@ -1,8 +1,9 @@
 
 // ============================================================
-// Dependent Subcategory & Variant Stock Matrix Management
+// Enhanced Category-Aware Size & Weight/Gram Variant Matrix
 // ============================================================
 let globalCatalog = [];
+let allAdminProducts = [];
 
 async function loadCategoriesForDropdown() {
   try {
@@ -20,26 +21,62 @@ async function loadCategoriesForDropdown() {
 
 function handleCategoryChange(catId) {
   const subSelect = $('#newProdSubcategory');
-  if (!subSelect) return;
-  subSelect.innerHTML = '<option value="">-- Select Subcategory --</option>';
-  if (!catId) return;
+  if (subSelect) {
+    subSelect.innerHTML = '<option value="">-- Select Subcategory --</option>';
+    if (catId) {
+      const foundCat = globalCatalog.find(c => String(c.id) === String(catId));
+      if (foundCat && Array.isArray(foundCat.subs)) {
+        subSelect.innerHTML += foundCat.subs.map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
+      }
+    }
+  }
 
-  const foundCat = globalCatalog.find(c => String(c.id) === String(catId));
-  if (foundCat && Array.isArray(foundCat.subs)) {
-    subSelect.innerHTML += foundCat.subs.map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
+  // Highlight Category Presets
+  const clothingBox = $('#clothingPresets');
+  const foodBox = $('#foodPresets');
+  const hint = $('#presetCategoryHint');
+
+  const catStr = String(catId);
+  // Category 3 is Clothes
+  if (catStr === '3') {
+    if (clothingBox) clothingBox.style.outline = '2px solid var(--primary)';
+    if (clothingBox) clothingBox.style.padding = '4px';
+    if (clothingBox) clothingBox.style.borderRadius = '6px';
+    if (foodBox) foodBox.style.outline = 'none';
+    if (hint) hint.textContent = '✨ Clothing sizes highlighted!';
+  } else if (catStr === '1' || catStr === '5' || catStr === '2') {
+    // 1: Foods, 2: Masale, 5: Fresh Vegetables
+    if (foodBox) foodBox.style.outline = '2px solid var(--primary)';
+    if (foodBox) foodBox.style.padding = '4px';
+    if (foodBox) foodBox.style.borderRadius = '6px';
+    if (clothingBox) clothingBox.style.outline = 'none';
+    if (hint) hint.textContent = '✨ Pack weights highlighted!';
+  } else {
+    if (clothingBox) clothingBox.style.outline = 'none';
+    if (foodBox) foodBox.style.outline = 'none';
+    if (hint) hint.textContent = '(Click any preset to add)';
   }
 }
 
-function renderVariantRow(name = '', stock = 20) {
+function renderVariantRow(name = '', stock = 20, price = '') {
   const container = $('#variantsContainer');
   if (!container) return;
+
+  // Don't add duplicate variant name
+  const existing = Array.from(container.querySelectorAll('.var-name')).map(i => i.value.trim().toLowerCase());
+  if (name && existing.includes(name.trim().toLowerCase())) {
+    // Focus existing row
+    return;
+  }
+
   const row = document.createElement('div');
   row.className = 'variant-matrix-row';
-  row.style.cssText = 'display:grid; grid-template-columns:1fr 1fr auto; gap:8px; align-items:center;';
+  row.style.cssText = 'display:grid; grid-template-columns:1.2fr 1fr 1fr auto; gap:8px; align-items:center; background:#ffffff; padding:6px 8px; border:1px solid #e2e8f0; border-radius:8px;';
   row.innerHTML = `
-    <input type="text" class="form-control var-name" placeholder="Size/Weight (e.g. M, L, 500g)" value="${escapeHtml(name)}" required>
-    <input type="number" class="form-control var-stock" placeholder="Stock Qty" min="0" value="${stock}" required>
-    <button type="button" class="btn btn-danger btn-sm" onclick="this.parentElement.remove()" style="padding:6px 10px;">✕</button>
+    <input type="text" class="form-control var-name" placeholder="Size/Weight (e.g. M, 500g)" value="${escapeHtml(name)}" required style="font-weight:700;">
+    <input type="number" class="form-control var-price" placeholder="Price ₹ (opt)" value="${price || ''}" min="0">
+    <input type="number" class="form-control var-stock" placeholder="Stock Qty" min="0" value="${stock}" required style="font-weight:600;">
+    <button type="button" class="btn btn-danger btn-sm" onclick="this.parentElement.remove()" style="padding:6px 10px;" title="Remove variant">✕</button>
   `;
   container.appendChild(row);
 }
@@ -50,10 +87,23 @@ function getVariantsPayload() {
   rows.forEach(r => {
     const name = r.querySelector('.var-name')?.value.trim();
     const stock = Math.max(0, parseInt(r.querySelector('.var-stock')?.value, 10) || 0);
-    if (name) variants.push({ name, stock });
+    const pVal = r.querySelector('.var-price')?.value;
+    const price = pVal !== '' && !isNaN(Number(pVal)) && Number(pVal) > 0 ? Number(pVal) : undefined;
+    if (name) variants.push({ name, stock, ...(price ? { price } : {}) });
   });
   return variants;
 }
+
+// Preset Click Handlers
+function setupPresetButtons() {
+  $$('.preset-btn').forEach(btn => {
+    btn.onclick = () => {
+      const presetName = btn.dataset.preset;
+      renderVariantRow(presetName, 20);
+    };
+  });
+}
+
 
 // ============================================================
 // Aashvi Hub - Admin Dashboard Controller
@@ -102,16 +152,22 @@ function setupEventListeners() {
 
   // Add product modal controls
   $('#openAddProductBtn')?.addEventListener('click', () => {
-    $('#addProductModal')?.classList.add('open');
+    $('#addProductForm')?.reset();
+    $('#editProductId').value = '';
+    $('#productModalTitle').textContent = 'Add New Product';
+    $('#saveProductBtn').textContent = 'Save Product';
     const vCont = $('#variantsContainer');
-    if (vCont && vCont.children.length === 0) {
-      renderVariantRow('Standard', 20);
-    }
+    if (vCont) vCont.innerHTML = '';
+    handleCategoryChange('');
+    $('#addProductModal')?.classList.add('open');
   });
   $('#closeAddProductBtn')?.addEventListener('click', () => {
     $('#addProductModal')?.classList.remove('open');
   });
   $('#addProductForm')?.addEventListener('submit', handleAddProduct);
+  $('#newProdCategory')?.addEventListener('change', (e) => handleCategoryChange(e.target.value));
+  $('#addVariantRowBtn')?.addEventListener('click', () => renderVariantRow('', 10));
+  setupPresetButtons();
   $('#newProdCategory')?.addEventListener('change', (e) => handleCategoryChange(e.target.value));
   $('#addVariantRowBtn')?.addEventListener('click', () => renderVariantRow('', 10));
 
@@ -425,61 +481,128 @@ async function loadProducts() {
   if (!tbody) return;
   try {
     const products = await adminApi('/api/admin/products');
-    $('#statProducts').textContent = products.length;
+    allAdminProducts = products || [];
+    $('#statProducts').textContent = allAdminProducts.length;
 
-    tbody.innerHTML = products.map(p => `
-      <tr>
-        <td>
-          <img src="${p.image || 'https://via.placeholder.com/40'}" style="width:44px; height:44px; object-fit:cover; border-radius:8px;">
-        </td>
-        <td><b>${escapeHtml(p.name)}</b><br><small style="color:var(--text-muted);">${p.unit || ''}</small></td>
-        <td><b>₹${p.price}</b></td>
-        <td><del style="color:var(--text-muted);">₹${p.mrp}</del></td>
-        <td>${p.stock}</td>
-        <td>
-          <span class="badge-status" style="${p.is_available ? '' : 'background:#fee2e2; color:#ef4444;'}">
-            ${p.is_available ? 'In Stock' : 'Hidden'}
-          </span>
-        </td>
-        <td>
-          <button class="btn btn-danger btn-sm" onclick="deleteProduct(${p.id})">Delete</button>
-        </td>
-      </tr>
-    `).join('');
+    tbody.innerHTML = allAdminProducts.map(p => {
+      const variantsSummary = Array.isArray(p.variants) && p.variants.length > 0
+        ? p.variants.map(v => `${v.name}: ${v.stock}`).join(', ')
+        : `Stock: ${p.stock}`;
+
+      return `
+        <tr>
+          <td>
+            <img src="${p.image || 'https://via.placeholder.com/40'}" style="width:44px; height:44px; object-fit:cover; border-radius:8px;">
+          </td>
+          <td>
+            <b>${escapeHtml(p.name)}</b><br>
+            <small style="color:var(--text-muted);">${escapeHtml(p.unit || '')}</small>
+          </td>
+          <td><b>₹${p.price}</b></td>
+          <td><del style="color:var(--text-muted);">₹${p.mrp || p.price}</del></td>
+          <td>
+            <b>${p.stock}</b><br>
+            <small style="color:#64748b; font-size:11px;" title="${escapeHtml(variantsSummary)}">${escapeHtml(variantsSummary.slice(0, 32))}${variantsSummary.length > 32 ? '...' : ''}</small>
+          </td>
+          <td>
+            <span class="badge-status" style="${p.is_available ? '' : 'background:#fee2e2; color:#ef4444;'}">
+              ${p.is_available ? 'In Stock' : 'Hidden'}
+            </span>
+          </td>
+          <td style="white-space:nowrap;">
+            <button class="btn btn-secondary btn-sm" onclick="openEditProduct(${p.id})" style="margin-right:4px;">Edit</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteProduct(${p.id})">Delete</button>
+          </td>
+        </tr>
+      `;
+    }).join('');
   } catch (e) {
     console.error('Error loading products:', e);
   }
 }
 
+window.openEditProduct = function(id) {
+  const p = allAdminProducts.find(x => x.id === id);
+  if (!p) return;
+
+  $('#editProductId').value = p.id;
+  $('#productModalTitle').textContent = 'Edit Product #' + p.id;
+  $('#saveProductBtn').textContent = 'Update Product';
+  $('#newProdName').value = p.name || '';
+  $('#newProdPrice').value = p.price || '';
+  $('#newProdMrp').value = p.mrp || p.price || '';
+  $('#newProdUnit').value = p.unit || '';
+  $('#newProdImage').value = p.image || '';
+  $('#newProdDesc').value = p.description || '';
+
+  // Set category and subcategory
+  const catVal = p.category_id || (p.category ? 3 : '');
+  $('#newProdCategory').value = catVal;
+  handleCategoryChange(catVal);
+
+  if (p.subcategory_id) {
+    setTimeout(() => {
+      $('#newProdSubcategory').value = p.subcategory_id;
+    }, 100);
+  }
+
+  // Pre-fill variants
+  const vCont = $('#variantsContainer');
+  if (vCont) {
+    vCont.innerHTML = '';
+    if (Array.isArray(p.variants) && p.variants.length > 0) {
+      p.variants.forEach(v => renderVariantRow(v.name, v.stock, v.price));
+    } else {
+      renderVariantRow(p.unit || 'Standard', p.stock || 20, p.price);
+    }
+  }
+
+  $('#addProductModal')?.classList.add('open');
+};
+
 async function handleAddProduct(e) {
   e.preventDefault();
+  const editId = $('#editProductId')?.value;
   const variants = getVariantsPayload();
   const subcategoryId = Number($('#newProdSubcategory')?.value || $('#newProdCategory')?.value || 1);
-  const totalStock = variants.length > 0 ? variants.reduce((s, v) => s + v.stock, 0) : Number($('#newProdStock')?.value || 50);
-  const newProd = {
-    name: $('#newProdName').value,
+  const totalStock = variants.length > 0 ? variants.reduce((s, v) => s + v.stock, 0) : 50;
+
+  const prodPayload = {
+    name: $('#newProdName').value.trim(),
     category_id: Number($('#newProdCategory').value) || null,
     subcategory_id: subcategoryId,
     price: Number($('#newProdPrice').value),
     mrp: Number($('#newProdMrp').value) || Number($('#newProdPrice').value),
     stock: totalStock,
-    unit: $('#newProdUnit')?.value || 'Standard',
-    image: $('#newProdImage').value,
-    description: $('#newProdDesc').value,
+    unit: $('#newProdUnit')?.value || (variants[0] ? variants[0].name : 'Standard'),
+    image: $('#newProdImage').value.trim(),
+    description: $('#newProdDesc').value.trim(),
     variants: variants
   };
 
   try {
-    await adminApi('/api/admin/products', {
-      method: 'POST',
-      body: JSON.stringify(newProd)
-    });
+    if (editId) {
+      await adminApi(`/api/admin/products/${editId}`, {
+        method: 'PUT',
+        body: JSON.stringify(prodPayload)
+      });
+      alert('✓ Product #' + editId + ' updated successfully!');
+    } else {
+      await adminApi('/api/admin/products', {
+        method: 'POST',
+        body: JSON.stringify(prodPayload)
+      });
+      alert('✓ Product added successfully!');
+    }
+
     $('#addProductModal')?.classList.remove('open');
     $('#addProductForm')?.reset();
+    $('#editProductId').value = '';
+    $('#productModalTitle').textContent = 'Add New Product';
+    $('#saveProductBtn').textContent = 'Save Product';
     loadProducts();
-    alert('✓ Product added successfully!');
   } catch (err) {
-    alert('Failed to add product: ' + err.message);
+    alert('Failed to save product: ' + err.message);
   }
 }
 

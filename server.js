@@ -714,7 +714,6 @@ app.post('/api/auth/login', wrap(async (req, res) => {
   res.json({ success: true, token, user: { id: user.id, name: user.name, phone: user.phone, email: user.email } });
 }));
 
-// Start server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, async () => {
   console.log(`✓ Aashvi Hub Server running on http://localhost:${PORT}`);

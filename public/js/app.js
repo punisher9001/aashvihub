@@ -732,17 +732,18 @@ $('#trackSubmitBtn').onclick = async () => {
   try {
     const orders = await api('/api/track/' + encodeURIComponent(q));
     resEl.innerHTML = orders.map(o => {
-      const stepMap = { pending: 1, confirmed: 2, shipped: 3, delivered: 4, cancelled: 0 };
-      const curStep = stepMap[o.status] || 1;
+      const normStatus = (o.order_status || o.status || 'placed').toLowerCase();
+      const stepMap = { placed: 1, packed: 2, shipped: 3, delivered: 4, confirmed: 2, pending: 1, cancelled: 0 };
+      const curStep = stepMap[normStatus] || 1;
 
       return `
         <div class="track-card-item">
           <div style="display:flex;justify-content:space-between;align-items:center">
             <strong>Order #${o.id}</strong>
-            <span class="badge-pill" style="text-transform:capitalize">${o.status}</span>
+            <span class="badge-pill" style="text-transform:capitalize">${esc(o.order_status || o.status || 'Placed')}</span>
           </div>
           <div style="font-size:12px;color:var(--text-muted);margin:4px 0">
-            Placed on ${new Date(o.created_at).toLocaleDateString()} • Amount: ${inr(o.total)}
+            Placed on ${new Date(o.created_at).toLocaleDateString()} • Amount: ${inr(o.total)} • Payment: <b>${esc((o.payment_method || 'COD').toUpperCase())} (${esc(o.payment_status || 'Pending')})</b>
           </div>
           <div style="font-size:12.5px;margin-bottom:8px">
             ETA: <strong>${esc(o.eta_text || '2-5 days')}</strong>
@@ -755,7 +756,7 @@ $('#trackSubmitBtn').onclick = async () => {
             </div>
             <div class="track-step ${curStep >= 2 ? 'done' : ''}">
               <div class="step-dot">2</div>
-              <span class="step-label">Verified</span>
+              <span class="step-label">Packed</span>
             </div>
             <div class="track-step ${curStep >= 3 ? 'done' : ''}">
               <div class="step-dot">3</div>
@@ -766,6 +767,14 @@ $('#trackSubmitBtn').onclick = async () => {
               <span class="step-label">Delivered</span>
             </div>
           </div>
+
+          ${o.delivery_pin ? `
+            <div style="margin:14px 0 8px 0; padding:12px 14px; background:#ecfdf5; border:1.5px dashed #059669; border-radius:10px; text-align:center;">
+              <div style="font-size:11px; font-weight:700; text-transform:uppercase; color:#047857; letter-spacing:0.5px;">Your 4-Digit Delivery Verification PIN</div>
+              <div style="font-size:26px; font-weight:800; letter-spacing:6px; color:#065f46; margin:4px 0;">${esc(o.delivery_pin)}</div>
+              <div style="font-size:11.5px; color:#047857;">Share this PIN with the delivery executive only when you receive your package.</div>
+            </div>
+          ` : ''}
 
           <div style="font-size:11.5px;color:#15803d;margin-top:8px">
             Supervised by Dr Mukul Kumar (Mob: 8988227729)
@@ -911,7 +920,15 @@ function showOrderSuccess(o, isWhatsapp = false, prefillWa = '') {
   $('#successOrderId').textContent = `Order Reference: #${o.order_id}`;
   $('#successDetailsCard').innerHTML = `
     <div><strong>Payable Amount:</strong> ${inr(o.total)}</div>
+    <div><strong>Payment:</strong> ${(o.payment_method || 'COD').toUpperCase()} (${o.payment_status || 'Pending'})</div>
     <div><strong>Delivery ETA:</strong> ${o.eta.min}-${o.eta.max} Days (${esc(o.eta.label)})</div>
+    ${o.delivery_pin ? `
+      <div style="margin:14px 0 10px 0; padding:12px; background:#ecfdf5; border:1.5px dashed #059669; border-radius:10px; text-align:center;">
+        <div style="font-size:11px; font-weight:700; text-transform:uppercase; color:#047857; letter-spacing:0.5px;">Your 4-Digit Delivery Verification PIN</div>
+        <div style="font-size:28px; font-weight:800; letter-spacing:6px; color:#065f46; margin:4px 0;">${esc(o.delivery_pin)}</div>
+        <div style="font-size:11.5px; color:#047857;">Share this PIN with the delivery executive only when you receive your package.</div>
+      </div>
+    ` : ''}
     <div style="margin-top:6px;color:#15803d">
       Dispatched directly under supervision of <strong>Dr Mukul Kumar</strong> (Mob: 8988227729).
     </div>

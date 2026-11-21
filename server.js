@@ -154,6 +154,9 @@ app.get('/api/categories/:id', wrap(async (req, res) => {
 }));
 
 app.get('/api/products', wrap(async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
   const products = await getProducts(req.query);
   res.json(products || []);
 }));
@@ -595,21 +598,42 @@ app.post('/api/admin/products', requireAdmin, wrap(async (req, res) => {
 
 app.put('/api/admin/products/:id', requireAdmin, wrap(async (req, res) => {
   const id = Number(req.params.id);
+  const prodData = { ...req.body };
+  if (Array.isArray(req.body.variants)) prodData.variants = req.body.variants;
+  if (req.body.category_id) prodData.category_id = Number(req.body.category_id);
+  if (req.body.subcategory_id) prodData.subcategory_id = Number(req.body.subcategory_id);
+
+  let updatedSb = null;
+  if (supabaseDb.isConfigured()) {
+    try {
+      updatedSb = await supabaseDb.updateProduct(id, prodData);
+    } catch (e) {
+      console.warn('Supabase updateProduct warning:', e.message);
+    }
+  }
+
   const p = localDb.data.products.find(x => x.id === id);
-  if (!p) return res.status(404).json({ error: 'Product not found' });
+  if (p) {
+    if (prodData.name) p.name = String(prodData.name).trim();
+    if (prodData.price !== undefined) p.price = Number(prodData.price);
+    if (prodData.mrp !== undefined) p.mrp = Number(prodData.mrp);
+    if (prodData.category_id) p.category_id = Number(prodData.category_id);
+    if (prodData.subcategory_id) p.subcategory_id = Number(prodData.subcategory_id);
+    if (prodData.unit) p.unit = String(prodData.unit).trim();
+    if (prodData.image) p.image = String(prodData.image).trim();
+    if (prodData.description !== undefined) p.description = String(prodData.description).trim();
+    if (Array.isArray(prodData.variants)) {
+      p.variants = prodData.variants;
+      p.stock = prodData.variants.reduce((s, v) => s + (Number(v.stock) || 0), 0);
+      p.is_available = p.stock > 0 ? 1 : 0;
+    } else if (prodData.stock !== undefined) {
+      p.stock = Number(prodData.stock);
+      p.is_available = p.stock > 0 ? 1 : 0;
+    }
+    localDb.save();
+  }
 
-  Object.assign(p, {
-    name: req.body.name ? String(req.body.name).trim() : p.name,
-    price: req.body.price !== undefined ? Number(req.body.price) : p.price,
-    mrp: req.body.mrp !== undefined ? Number(req.body.mrp) : p.mrp,
-    stock: req.body.stock !== undefined ? Number(req.body.stock) : p.stock,
-    is_available: req.body.is_available !== undefined ? (req.body.is_available ? 1 : 0) : p.is_available,
-    image: req.body.image !== undefined ? String(req.body.image).trim() : p.image,
-    description: req.body.description !== undefined ? String(req.body.description).trim() : p.description
-  });
-  localDb.save();
-
-  res.json({ success: true, product: p });
+  res.json({ success: true, product: updatedSb || p || { id, ...prodData } });
 }));
 
 app.delete('/api/admin/products/:id', requireAdmin, wrap(async (req, res) => {

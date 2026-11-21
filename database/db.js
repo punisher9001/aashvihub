@@ -2,7 +2,6 @@ const fs = require('fs');
 const path = require('path');
 const mysql = require('mysql2/promise');
 const bcrypt = require('bcryptjs');
-
 const STORE_PATH = path.join(__dirname, 'local_store.json');
 
 const INITIAL_DATA = {

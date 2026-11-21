@@ -114,6 +114,7 @@ const supabaseDb = {
     // Ensure valid stock integers
     variants = variants.map(v => ({
       name: String(v.name || 'Standard').trim(),
+      price: v.price !== undefined && !isNaN(Number(v.price)) && Number(v.price) > 0 ? Number(v.price) : Number(p.price || 0),
       stock: Math.max(0, parseInt(v.stock, 10) || 0)
     }));
 
@@ -135,6 +136,7 @@ const supabaseDb = {
   encodeProductDetails(detailsText, variants, categoryId) {
     const cleanVariants = Array.isArray(variants) ? variants.map(v => ({
       name: String(v.name || 'Standard').trim(),
+      price: v.price !== undefined && !isNaN(Number(v.price)) && Number(v.price) > 0 ? Number(v.price) : undefined,
       stock: Math.max(0, parseInt(v.stock, 10) || 0)
     })).filter(v => v.name) : [];
 
@@ -147,22 +149,47 @@ const supabaseDb = {
 
   async getProducts({ cat, sub, q } = {}) {
     try {
-      let query = '/products?select=*&is_available=eq.true';
-      if (sub) {
-        query += `&subcategory_id=eq.${encodeURIComponent(sub)}`;
-      } else if (cat) {
-        const subs = await sbFetch(`/subcategories?select=id&category_id=eq.${encodeURIComponent(cat)}`);
-        const subIds = (subs || []).map(s => s.id);
-        if (subIds.length > 0) query += `&subcategory_id=in.(${subIds.join(',')})`;
-        else return [];
-      }
-      if (q) {
-        const clean = encodeURIComponent(`*${q}*`);
-        query += `&or=(name.ilike.${clean},description.ilike.${clean})`;
-      }
-      query += '&order=id.asc&limit=250';
+      let query = '/products?select=*&is_available=eq.true&order=id.asc&limit=300';
       const rows = await sbFetch(query);
-      return (rows || []).map(p => this.parseProductVariants(p));
+      if (!rows) return [];
+      let list = rows.map(p => this.parseProductVariants(p));
+
+      // Robust Subcategory & Category filtering
+      if (sub) {
+        const targetSub = String(sub).trim().toLowerCase();
+        list = list.filter(p => {
+          return String(p.subcategory_id) === String(sub) ||
+                 String(p.sub_category_id) === String(sub) ||
+                 (p.subcategory && String(p.subcategory).toLowerCase() === targetSub) ||
+                 (p.sub_category && String(p.sub_category).toLowerCase() === targetSub);
+        });
+      } else if (cat) {
+        const targetCat = String(cat).trim().toLowerCase();
+        // Get all subcategory IDs for this category
+        let allowedSubIds = [];
+        try {
+          const subs = await sbFetch(`/subcategories?select=id&category_id=eq.${encodeURIComponent(cat)}`);
+          allowedSubIds = (subs || []).map(s => String(s.id));
+        } catch (_) {}
+
+        list = list.filter(p => {
+          if (p.category_id && String(p.category_id) === String(cat)) return true;
+          if (p.category && String(p.category).toLowerCase() === targetCat) return true;
+          if (allowedSubIds.length && allowedSubIds.includes(String(p.subcategory_id))) return true;
+          return false;
+        });
+      }
+
+      if (q) {
+        const term = String(q).trim().toLowerCase();
+        list = list.filter(p =>
+          (p.name && p.name.toLowerCase().includes(term)) ||
+          (p.description && p.description.toLowerCase().includes(term)) ||
+          (p.unit && p.unit.toLowerCase().includes(term))
+        );
+      }
+
+      return list;
     } catch (e) {
       console.error('[Supabase] getProducts error:', e.message);
       return null;
@@ -369,13 +396,16 @@ const supabaseDb = {
     const orderId = newOrder?.id;
 
     if (orderId && Array.isArray(items) && items.length > 0) {
-      const orderItemsPayload = items.map(it => ({
-        order_id: orderId,
-        product_id: it.id,
-        name: it.name || `Product #${it.id}`,
-        price: Number(it.price || 0),
-        qty: Number(it.qty || 1)
-      }));
+      const orderItemsPayload = items.map(it => {
+        const varLabel = it.variant ? ` (${it.variant})` : '';
+        return {
+          order_id: orderId,
+          product_id: it.id,
+          name: (it.name || `Product #${it.id}`) + varLabel,
+          price: Number(it.price || 0),
+          qty: Number(it.qty || 1)
+        };
+      });
 
       await sbFetch('/order_items', {
         method: 'POST',

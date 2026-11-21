@@ -1,4 +1,7 @@
-
+/* ==========================================================================
+   Aashvi Hub - Premium Quick-Commerce & Healthcare Store
+   Curated by Dr Mukul Kumar (Mob: 8988227729)
+   ========================================================================== */
 
 :root {
   --primary: #0b7a48;
@@ -2668,4 +2671,324 @@ body[dir="rtl"] .toast-container {
 
 .wishlist-item button:hover {
   background: #a00;
+}
+
+/* ==========================================================================
+   Blinkit-Style Category & Search Navigation
+   ========================================================================== */
+
+/* Category Sticky Sub-Header */
+.category-sticky-nav {
+  position: sticky;
+  top: 72px;
+  z-index: 30;
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(10px);
+  border-bottom: 1.5px solid var(--border-color);
+  padding: 12px 20px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+}
+
+.category-sticky-nav-inner {
+  max-width: 1300px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.btn-back-home {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  background: #f1f5f9;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-full);
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-back-home:hover {
+  background: var(--primary-light);
+  border-color: var(--primary);
+  color: var(--primary);
+  transform: translateX(-3px);
+}
+
+.btn-back-home svg {
+  transition: transform 0.2s ease;
+}
+
+.btn-back-home:hover svg {
+  transform: translateX(-2px);
+}
+
+.category-active-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cat-view-icon {
+  font-size: 30px;
+  line-height: 1;
+  display: inline-block;
+}
+
+.cat-view-title {
+  font-family: var(--font-heading);
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text-main);
+  line-height: 1.1;
+}
+
+.cat-view-count {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+/* Quick Category Switcher Strip in Category View */
+.cat-quick-switcher {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 0;
+  max-width: 100%;
+}
+
+.cat-quick-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: #f8fafc;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-full);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cat-quick-pill:hover,
+.cat-quick-pill.active {
+  background: var(--primary-light);
+  border-color: var(--primary);
+  color: var(--primary);
+  font-weight: 700;
+}
+
+/* Blinkit Category View Layout (Sidebar + Grid) */
+.category-layout-container {
+  max-width: 1300px;
+  margin: 20px auto 40px;
+  padding: 0 20px;
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.category-subnav-sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 16px 14px;
+  box-shadow: var(--shadow-sm);
+  position: sticky;
+  top: 145px;
+  max-height: calc(100vh - 165px);
+  overflow-y: auto;
+}
+
+.subnav-header-label {
+  font-size: 11.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.8px;
+  margin-bottom: 12px;
+  padding-left: 6px;
+}
+
+.category-subnav-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.subnav-tab-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1.5px solid transparent;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-main);
+  background: #f8fafc;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.subnav-tab-item:hover {
+  background: var(--primary-light);
+  color: var(--primary);
+  border-color: rgba(11, 122, 72, 0.3);
+}
+
+.subnav-tab-item.active {
+  background: var(--primary-light);
+  border-color: var(--primary);
+  color: var(--primary);
+  font-weight: 700;
+  box-shadow: 0 2px 8px var(--primary-glow);
+}
+
+.subnav-tab-item .tab-check {
+  font-size: 13px;
+  color: var(--primary);
+  font-weight: 800;
+  display: none;
+}
+
+.subnav-tab-item.active .tab-check {
+  display: inline-block;
+}
+
+.category-products-area {
+  flex: 1;
+  min-width: 0;
+}
+
+.category-products-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.category-products-header-bar h3 {
+  font-family: var(--font-heading);
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+/* Search View Styles */
+.search-view-header {
+  position: sticky;
+  top: 72px;
+  z-index: 30;
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(10px);
+  border-bottom: 1.5px solid var(--border-color);
+  padding: 14px 20px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+}
+
+.search-view-header-inner {
+  max-width: 1300px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.search-query-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.search-query-info h2 {
+  font-family: var(--font-heading);
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.btn-clear-search-view {
+  padding: 8px 16px;
+  background: #fee2e2;
+  color: #ef4444;
+  border-radius: var(--radius-full);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-clear-search-view:hover {
+  background: #ef4444;
+  color: white;
+}
+
+.search-results-container {
+  max-width: 1300px;
+  margin: 24px auto 40px;
+  padding: 0 20px;
+}
+
+/* Mobile Responsiveness for Blinkit Category Layout */
+@media (max-width: 860px) {
+  .category-layout-container {
+    flex-direction: column;
+    gap: 16px;
+    padding: 0 14px;
+    margin-top: 14px;
+  }
+
+  .category-subnav-sidebar {
+    width: 100%;
+    position: static;
+    max-height: none;
+    padding: 10px 12px;
+  }
+
+  .category-subnav-list {
+    flex-direction: row;
+    overflow-x: auto;
+    padding-bottom: 6px;
+    -webkit-overflow-scrolling: touch;
+    gap: 8px;
+  }
+
+  .subnav-tab-item {
+    white-space: nowrap;
+    padding: 8px 14px;
+    flex-shrink: 0;
+  }
+
+  .category-sticky-nav {
+    top: 60px;
+    padding: 10px 14px;
+  }
+
+  .search-view-header {
+    top: 60px;
+    padding: 10px 14px;
+  }
+
+  .cat-view-title {
+    font-size: 18px;
+  }
 }

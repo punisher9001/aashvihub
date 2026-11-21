@@ -687,7 +687,32 @@
           </div>
         </div>
 
-        <!-- Variant Matrix Rows -->
+        
+        <!-- Product Colors Builder -->
+        <div class="form-group" style="background:#f8fafc; padding:12px; border-radius:10px; border:1px solid #e2e8f0;">
+          <label style="font-weight:700; font-size:12.5px; color:#1e293b; display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <span>🎨 Product Colors (Optional):</span>
+            <span style="font-size:11px; color:#64748b; font-weight:normal;">Click chips or enter custom</span>
+          </label>
+          <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px;">
+            <button type="button" class="btn btn-secondary btn-sm color-chip-btn" data-color="Red" style="border-left:4px solid #ef4444;">Red</button>
+            <button type="button" class="btn btn-secondary btn-sm color-chip-btn" data-color="Blue" style="border-left:4px solid #3b82f6;">Blue</button>
+            <button type="button" class="btn btn-secondary btn-sm color-chip-btn" data-color="Black" style="border-left:4px solid #0f172a;">Black</button>
+            <button type="button" class="btn btn-secondary btn-sm color-chip-btn" data-color="White" style="border-left:4px solid #94a3b8;">White</button>
+            <button type="button" class="btn btn-secondary btn-sm color-chip-btn" data-color="Green" style="border-left:4px solid #10b981;">Green</button>
+            <button type="button" class="btn btn-secondary btn-sm color-chip-btn" data-color="Yellow" style="border-left:4px solid #eab308;">Yellow</button>
+            <button type="button" class="btn btn-secondary btn-sm color-chip-btn" data-color="Pink" style="border-left:4px solid #ec4899;">Pink</button>
+            <button type="button" class="btn btn-secondary btn-sm color-chip-btn" data-color="Navy" style="border-left:4px solid #1e3a8a;">Navy</button>
+            <button type="button" class="btn btn-secondary btn-sm color-chip-btn" data-color="Maroon" style="border-left:4px solid #881337;">Maroon</button>
+          </div>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <input type="text" id="customColorInput" class="form-control" placeholder="Add custom color name (e.g. Olive, Lavender)" style="font-size:12.5px; padding:6px 10px;">
+            <button type="button" id="addCustomColorBtn" class="btn btn-secondary btn-sm" style="flex-shrink:0;">+ Add</button>
+          </div>
+          <div id="selectedColorsContainer" style="display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;"></div>
+        </div>
+
+<!-- Variant Matrix Rows -->
         <div class="form-group">
           <label style="font-weight:700; font-size:13px; display:flex; justify-content:space-between;">
             <span>📦 Size / Weight Variants &amp; Stock Matrix *</span>
@@ -758,6 +783,6 @@
     </div>
   </div>
 
-  <script src="/js/admin.js?v=5"></script>
+  <script src="/js/admin.js?v=6"></script>
 </body>
 </html>

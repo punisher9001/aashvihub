@@ -1,4 +1,24 @@
 
+// User selected active color per product (productId -> colorName)
+const selectedColors = {};
+
+window.selectProductColor = function(productId, colorName, event) {
+  if (event) event.stopPropagation();
+  selectedColors[productId] = colorName;
+  renderProducts();
+};
+
+function getColorHexCode(name) {
+  const map = {
+    red: '#ef4444', blue: '#3b82f6', black: '#0f172a', white: '#f8fafc',
+    green: '#10b981', yellow: '#eab308', pink: '#ec4899', navy: '#1e3a8a',
+    maroon: '#881337', grey: '#64748b', gray: '#64748b', orange: '#f97316',
+    purple: '#a855f7', brown: '#78350f', beige: '#f5f5dc', olive: '#808000'
+  };
+  return map[String(name).toLowerCase()] || '#94a3b8';
+}
+
+
 function scrollToTopInstant() {
   try {
     window.scrollTo({ top: 0, behavior: 'instant' });
@@ -627,6 +647,26 @@ function renderProductGrid(visibleList, grid, empty, countBadge) {
     const n = cartItem ? cartItem.qty : 0;
     const isWished = wishlist.some(w => w.id === p.id);
 
+    // Color Swatches HTML
+    const colors = Array.isArray(p.colors) && p.colors.length > 0 ? p.colors : [];
+    const activeColor = selectedColors[p.id] || colors[0] || '';
+    const colorsHtml = colors.length > 0 ? `
+      <div class="color-swatch-box" onclick="event.stopPropagation()">
+        <span class="color-swatch-label">Color:</span>
+        ${colors.map(c => {
+          const isSelected = activeColor === c;
+          return `
+            <span class="color-swatch-pill ${isSelected ? 'selected' : ''}" 
+                  onclick="selectProductColor(${p.id}, '${esc(c)}', event)"
+                  title="${esc(c)}">
+              <span class="color-swatch-dot" style="background:${getColorHexCode(c)};"></span>
+              ${esc(c)}
+            </span>
+          `;
+        }).join('')}
+      </div>
+    ` : '';
+
     // Variant pills HTML (Clothes sizes / Food weights)
     const pillsHtml = variants.length > 1 ? `
       <div class="variant-pill-box" onclick="event.stopPropagation()">
@@ -673,6 +713,7 @@ function renderProductGrid(visibleList, grid, empty, countBadge) {
         <div class="card-meta">
           <div class="un">${esc((activeVar ? activeVar.name : p.unit) || 'Standard Unit')}</div>
           <div class="nm">${esc(p.name)}</div>
+          ${colorsHtml}
           ${pillsHtml}
           <div class="rating-line">
             <span>★★★★★</span>
@@ -707,7 +748,6 @@ function renderProductGrid(visibleList, grid, empty, countBadge) {
 }
 
 
-// Product Details Modal
 function openDetail(id) {
   const p = st.products.find(x => x.id === id) || 
             st.categoryProducts.find(x => x.id === id) || 
@@ -725,12 +765,33 @@ function openDetail(id) {
   const off = p.mrp > currentPrice ? Math.round((1 - currentPrice / p.mrp) * 100) : 0;
   const inCart = cart[p.id] ? cart[p.id].qty : 0;
 
-  const waText = encodeURIComponent(`Hello Dr Mukul Kumar, I would like to order "${p.name}" (${activeVar ? activeVar.name : p.unit}) from Aashvi Hub at ${inr(currentPrice)}.`);
+  const colors = Array.isArray(p.colors) && p.colors.length > 0 ? p.colors : [];
+  const activeColor = selectedColors[p.id] || colors[0] || '';
+
+  const waText = encodeURIComponent(`Hello Dr Mukul Kumar, I would like to order "${p.name}" (${activeVar ? activeVar.name : p.unit}${activeColor ? `, Color: ${activeColor}` : ''}) from Aashvi Hub at ${inr(currentPrice)}.`);
+
+  const colorsHtml = colors.length > 0 ? `
+    <div class="modal-color-box">
+      <div class="modal-color-label">Select Color: <b>${esc(activeColor)}</b></div>
+      <div class="modal-color-pills">
+        ${colors.map(c => {
+          const isSelected = activeColor === c;
+          return `
+            <button type="button" class="modal-color-pill ${isSelected ? 'selected' : ''}"
+                    onclick="selectProductColor(${p.id}, '${esc(c)}'); openDetail(${p.id});">
+              <span class="color-swatch-dot" style="background:${getColorHexCode(c)};"></span>
+              ${esc(c)}
+            </button>
+          `;
+        }).join('')}
+      </div>
+    </div>
+  ` : '';
 
   const pillsHtml = variants.length > 1 ? `
     <div class="modal-variant-box">
       <div class="modal-variant-label">
-        <span>Select Option / Size / Pack:</span>
+        <span>Select Size / Pack Weight:</span>
         <span style="font-size:12px; color:${isVarOOS ? '#ef4444' : '#059669'}; font-weight:700;">
           ${isVarOOS ? 'Out of Stock' : `Available Stock: ${activeVar.stock}`}
         </span>
@@ -766,6 +827,7 @@ function openDetail(id) {
         ` : ''}
       </div>
 
+      ${colorsHtml}
       ${pillsHtml}
 
       <div class="modal-doctor-box">
@@ -794,7 +856,7 @@ function openDetail(id) {
   $('#modalAddBtn').onclick = () => {
     if (isVarOOS) return;
     changeQuantity(p.id, 1);
-    showToast(`Added "${p.name} (${activeVar ? activeVar.name : p.unit})"`);
+    showToast(`Added "${p.name}"`);
     $('#modal').hidden = true;
   };
 
@@ -802,7 +864,6 @@ function openDetail(id) {
 }
 
 
-// Cart Quantity Management
 function changeQuantity(id, delta) {
   const p = st.products.find(x => x.id === id) || 
             st.categoryProducts.find(x => x.id === id) || 
@@ -829,10 +890,12 @@ function changeQuantity(id, delta) {
     delete cart[id];
   } else {
     const itemPrice = (activeVar && activeVar.price) ? activeVar.price : p.price;
+    const chosenColor = selectedColors[id] || (Array.isArray(p.colors) && p.colors.length ? p.colors[0] : '');
     cart[id] = { 
       p: { ...p, price: itemPrice }, 
       qty: next, 
-      variant: activeVar ? activeVar.name : (p.unit || 'Standard') 
+      variant: activeVar ? activeVar.name : (p.unit || 'Standard'),
+      color: chosenColor
     };
   }
 
@@ -1216,13 +1279,18 @@ $('#checkout').onsubmit = async ev => {
   const msg = $('#orderMsg');
   msg.textContent = '';
 
-  const items = Object.entries(cart).map(([id, c]) => ({ 
-    id: +id, 
-    qty: c.qty, 
-    variant: c.variant || (c.p ? c.p.unit : 'Standard'),
-    name: c.p ? c.p.name : `Product #${id}`,
-    price: c.p ? c.p.price : 0
-  }));
+  const items = Object.entries(cart).map(([id, c]) => {
+    const colorLabel = c.color ? ` [${c.color}]` : '';
+    const variantLabel = c.variant ? ` (${c.variant})` : '';
+    return { 
+      id: +id, 
+      qty: c.qty, 
+      variant: c.variant || (c.p ? c.p.unit : 'Standard'),
+      color: c.color || '',
+      name: (c.p ? c.p.name : `Product #${id}`) + colorLabel + variantLabel,
+      price: c.p ? c.p.price : 0
+    };
+  });
   if (!items.length) {
     msg.textContent = T('empty');
     return;

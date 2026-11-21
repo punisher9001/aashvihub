@@ -115,156 +115,241 @@
   <!-- ETA Delivery Alert Strip -->
   <div id="eta" class="eta" hidden></div>
 
-  <!-- Hero & Value Proposition Section -->
-  <section class="hero-section">
-    <div class="hero-container">
-      <div class="hero-content">
-        <div class="hero-tag">
-          <span class="hero-dot"></span>
-          <span data-t="hero_badge">100% Quality Guaranteed • Dr Mukul Kumar</span>
-        </div>
-        <h1 class="hero-title" data-t="hero_title">
-          Foods, Authentic Masale, Clothes, Electric Parts &amp; Fresh Veggies
-        </h1>
-        <p class="hero-desc" data-t="hero_desc">
-          Handmade snacks, freshly blended spices, stylish apparel, reliable electrical fittings, and farm-fresh vegetables dispatched with care across India.
-        </p>
-
-        <div class="hero-actions">
-          <a href="#shopSection" class="btn-hero-primary">
-            <span data-t="hero_btn_shop">Explore Products</span>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
-          </a>
-          <a href="#cats" class="btn-hero-secondary">
-            <span>Browse Categories</span>
-          </a>
-        </div>
-      </div>
-
-      <!-- Trust Pillars Grid -->
-      <div class="hero-trust-grid">
-        <div class="trust-card">
-          <div class="trust-icon">💎</div>
-          <div class="trust-title" data-t="trust_tested">Inspected Quality</div>
-          <div class="trust-sub">Verified by Dr Mukul Kumar</div>
-        </div>
-        <div class="trust-card">
-          <div class="trust-icon">⚡</div>
-          <div class="trust-title" data-t="trust_dispatch">Swift Dispatch</div>
-          <div class="trust-sub">Fast dispatch from central hub</div>
-        </div>
-        <div class="trust-card">
-          <div class="trust-icon">🚚</div>
-          <div class="trust-title" data-t="trust_free_del">Free Delivery</div>
-          <div class="trust-sub">On orders over ₹499</div>
-        </div>
-        <div class="trust-card">
-          <div class="trust-icon">🛡️</div>
-          <div class="trust-title" data-t="trust_genuine">100% Genuine</div>
-          <div class="trust-sub">Tamper-proof sealed authentic packaging</div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Main Store Body -->
-  <main id="shopSection">
-    <!-- Category Strip -->
-    <div class="section-header">
-      <div class="section-title-wrap">
-        <h2 data-t="categories">Explore Categories</h2>
-        <p class="section-subtitle">Click a category to open its subcategories and explore items</p>
-      </div>
-    </div>
-    <section id="cats" class="cats"></section>
-
-    <!-- Subcategories Chips Strip -->
-    <div class="subs-header" id="subsHeader">
-      <span class="subs-header-label">Subcategories:</span>
-      <section id="subs" class="subs"></section>
-    </div>
-
-    <!-- Interactive Filter & Sort Toolbar -->
-    <section class="filters-toolbar">
-      <div class="filter-group-sort">
-        <label for="sortSelect" data-t="filter_sort">Sort By:</label>
-        <select id="sortSelect" class="filter-select">
-          <option value="featured" data-t="sort_featured">Featured</option>
-          <option value="low_high" data-t="sort_low_high">Price: Low to High</option>
-          <option value="high_low" data-t="sort_high_low">Price: High to Low</option>
-          <option value="discount" data-t="sort_discount">Biggest Discount</option>
-        </select>
-      </div>
-
-      <div class="filter-group-price" id="priceChips">
-        <span class="filter-label">Price:</span>
-        <button class="price-chip on" data-price="all" data-t="filter_all">All</button>
-        <button class="price-chip" data-price="under_100" data-t="price_under_100">Under ₹100</button>
-        <button class="price-chip" data-price="100_300" data-t="price_100_300">₹100 - ₹300</button>
-        <button class="price-chip" data-price="300_500" data-t="price_300_500">₹300 - ₹500</button>
-        <button class="price-chip" data-price="above_500" data-t="price_above_500">Above ₹500</button>
-      </div>
-
-      <div class="filter-group-actions">
-        <label class="stock-toggle">
-          <input type="checkbox" id="stockOnly">
-          <span data-t="in_stock_only">In Stock Only</span>
-        </label>
-        <button id="resetFiltersBtn" class="btn-reset-filters" data-t="clear_filters">Reset Filters</button>
-      </div>
-    </section>
-
-    <!-- Products Showcase Header -->
-    <div class="products-header">
-      <div class="products-header-title">
-        <h3 id="currentCatTitle">All Featured Products</h3>
-        <span id="productCountBadge" class="count-badge">0 items</span>
-      </div>
-      <div class="offer-pill" id="couponBannerNotice">
-        <span>🎉 Use Code <strong>WELCOME10</strong> for 10% OFF</span>
-      </div>
-    </div>
-
-    <!-- Product Grid -->
-    <section id="grid" class="grid"></section>
-
-    <!-- Empty State -->
-    <div id="emptyGrid" class="empty-state" hidden>
-      <div class="empty-icon">🔍</div>
-      <h3>No matching products found</h3>
-      <p>Try clearing filters or selecting another category.</p>
-      <button id="resetSearchBtn" class="btn-pill" data-t="clear_filters">Reset Filters</button>
-    </div>
-
-    <!-- Doctor & Owner Profile & Trust Section -->
-    <section class="doctor-profile-section">
-      <div class="doctor-card">
-        <div class="doctor-avatar-wrap">
-          <div class="doctor-avatar">
-            <span class="avatar-sym">🩺</span>
+  <!-- ================= 1. HOME VIEW ================= -->
+  <div id="homeView">
+    <!-- Hero & Value Proposition Section -->
+    <section class="hero-section">
+      <div class="hero-container">
+        <div class="hero-content">
+          <div class="hero-tag">
+            <span class="hero-dot"></span>
+            <span data-t="hero_badge">100% Quality Guaranteed • Dr Mukul Kumar</span>
           </div>
-          <span class="verified-check" title="Verified Store Owner">✓</span>
-        </div>
-        <div class="doctor-info">
-          <div class="doctor-badge">Founder &amp; Director</div>
-          <h3 class="doctor-name">Dr Mukul Kumar</h3>
-          <p class="doctor-desc">
-            "At <strong>Aashvi Hub</strong>, we provide pure, verified foods, traditional stone-ground masale, quality garments, electrical accessories, and farm-fresh vegetables directly to your doorsteps. For any inquiries, bulk orders, or support, feel free to call or WhatsApp me directly."
+          <h1 class="hero-title" data-t="hero_title">
+            Foods, Authentic Masale, Clothes, Electric Parts &amp; Fresh Veggies
+          </h1>
+          <p class="hero-desc" data-t="hero_desc">
+            Handmade snacks, freshly blended spices, stylish apparel, reliable electrical fittings, and farm-fresh vegetables dispatched with care across India.
           </p>
-          <div class="doctor-contact-actions">
-            <a href="tel:8988227729" class="btn-doc-call">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-              <span>Direct Call: 8988227729</span>
+
+          <div class="hero-actions">
+            <a href="#homeFeaturedSection" class="btn-hero-primary">
+              <span data-t="hero_btn_shop">Explore Products</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
             </a>
-            <a href="https://wa.me/918988227729?text=Hello%20Dr%20Mukul%20Kumar,%20I%20have%20a%20question%20about%20a%20product%20on%20Aashvi%20Hub" target="_blank" rel="noopener" class="btn-doc-wa">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91C2.13 13.66 2.59 15.36 3.45 16.86L2.05 22L7.3 20.62C8.75 21.41 10.38 21.83 12.04 21.83C17.5 21.83 21.95 17.38 21.95 11.92C21.95 9.27 20.92 6.78 19.05 4.91C17.18 3.03 14.69 2 12.04 2M12.05 3.67C14.25 3.67 16.31 4.53 17.87 6.09C19.42 7.65 20.28 9.72 20.28 11.92C20.28 16.46 16.58 20.15 12.04 20.15C10.56 20.15 9.11 19.76 7.85 19L7.55 18.83L4.43 19.65L5.26 16.61L5.06 16.29C4.24 14.99 3.81 13.47 3.81 11.91C3.81 7.37 7.5 3.67 12.05 3.67Z"/></svg>
-              <span>WhatsApp Dr Mukul Kumar</span>
+            <a href="#cats" class="btn-hero-secondary">
+              <span>Browse Categories</span>
             </a>
+          </div>
+        </div>
+
+        <!-- Trust Pillars Grid -->
+        <div class="hero-trust-grid">
+          <div class="trust-card">
+            <div class="trust-icon">💎</div>
+            <div class="trust-title" data-t="trust_tested">Inspected Quality</div>
+            <div class="trust-sub">Verified by Dr Mukul Kumar</div>
+          </div>
+          <div class="trust-card">
+            <div class="trust-icon">⚡</div>
+            <div class="trust-title" data-t="trust_dispatch">Swift Dispatch</div>
+            <div class="trust-sub">Fast dispatch from central hub</div>
+          </div>
+          <div class="trust-card">
+            <div class="trust-icon">🚚</div>
+            <div class="trust-title" data-t="trust_free_del">Free Delivery</div>
+            <div class="trust-sub">On orders over ₹499</div>
+          </div>
+          <div class="trust-card">
+            <div class="trust-icon">🛡️</div>
+            <div class="trust-title" data-t="trust_genuine">100% Genuine</div>
+            <div class="trust-sub">Tamper-proof sealed authentic packaging</div>
           </div>
         </div>
       </div>
     </section>
-  </main>
+
+    <!-- Main Store Categories -->
+    <main id="shopSection">
+      <!-- Category Strip -->
+      <div class="section-header">
+        <div class="section-title-wrap">
+          <h2 data-t="categories">Explore Categories</h2>
+          <p class="section-subtitle">Click any category to open its full product catalog &amp; subcategories</p>
+        </div>
+      </div>
+      <section id="cats" class="cats"></section>
+
+      <!-- Home Featured Products -->
+      <div id="homeFeaturedSection">
+        <!-- Interactive Filter & Sort Toolbar -->
+        <section class="filters-toolbar">
+          <div class="filter-group-sort">
+            <label for="sortSelect" data-t="filter_sort">Sort By:</label>
+            <select id="sortSelect" class="filter-select">
+              <option value="featured" data-t="sort_featured">Featured</option>
+              <option value="low_high" data-t="sort_low_high">Price: Low to High</option>
+              <option value="high_low" data-t="sort_high_low">Price: High to Low</option>
+              <option value="discount" data-t="sort_discount">Biggest Discount</option>
+            </select>
+          </div>
+
+          <div class="filter-group-price" id="priceChips">
+            <span class="filter-label">Price:</span>
+            <button class="price-chip on" data-price="all" data-t="filter_all">All</button>
+            <button class="price-chip" data-price="under_100" data-t="price_under_100">Under ₹100</button>
+            <button class="price-chip" data-price="100_300" data-t="price_100_300">₹100 - ₹300</button>
+            <button class="price-chip" data-price="300_500" data-t="price_300_500">₹300 - ₹500</button>
+            <button class="price-chip" data-price="above_500" data-t="price_above_500">Above ₹500</button>
+          </div>
+
+          <div class="filter-group-actions">
+            <label class="stock-toggle">
+              <input type="checkbox" id="stockOnly">
+              <span data-t="in_stock_only">In Stock Only</span>
+            </label>
+            <button id="resetFiltersBtn" class="btn-reset-filters" data-t="clear_filters">Reset Filters</button>
+          </div>
+        </section>
+
+        <!-- Products Showcase Header -->
+        <div class="products-header">
+          <div class="products-header-title">
+            <h3 id="currentCatTitle">Featured Products</h3>
+            <span id="productCountBadge" class="count-badge">0 items</span>
+          </div>
+          <div class="offer-pill" id="couponBannerNotice">
+            <span>🎉 Use Code <strong>WELCOME10</strong> for 10% OFF</span>
+          </div>
+        </div>
+
+        <!-- Product Grid -->
+        <section id="grid" class="grid"></section>
+
+        <!-- Empty State -->
+        <div id="emptyGrid" class="empty-state" hidden>
+          <div class="empty-icon">🔍</div>
+          <h3>No matching products found</h3>
+          <p>Try clearing filters or selecting another category.</p>
+          <button id="resetSearchBtn" class="btn-pill" data-t="clear_filters">Reset Filters</button>
+        </div>
+      </div>
+
+      <!-- Doctor & Owner Profile & Trust Section -->
+      <section class="doctor-profile-section">
+        <div class="doctor-card">
+          <div class="doctor-avatar-wrap">
+            <div class="doctor-avatar">
+              <span class="avatar-sym">🩺</span>
+            </div>
+            <span class="verified-check" title="Verified Store Owner">✓</span>
+          </div>
+          <div class="doctor-info">
+            <div class="doctor-badge">Founder &amp; Director</div>
+            <h3 class="doctor-name">Dr Mukul Kumar</h3>
+            <p class="doctor-desc">
+              "At <strong>Aashvi Hub</strong>, we provide pure, verified foods, traditional stone-ground masale, quality garments, electrical accessories, and farm-fresh vegetables directly to your doorsteps. For any inquiries, bulk orders, or support, feel free to call or WhatsApp me directly."
+            </p>
+            <div class="doctor-contact-actions">
+              <a href="tel:8988227729" class="btn-doc-call">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                <span>Direct Call: 8988227729</span>
+              </a>
+              <a href="https://wa.me/918988227729?text=Hello%20Dr%20Mukul%20Kumar,%20I%20have%20a%20question%20about%20a%20product%20on%20Aashvi%20Hub" target="_blank" rel="noopener" class="btn-doc-wa">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91C2.13 13.66 2.59 15.36 3.45 16.86L2.05 22L7.3 20.62C8.75 21.41 10.38 21.83 12.04 21.83C17.5 21.83 21.95 17.38 21.95 11.92C21.95 9.27 20.92 6.78 19.05 4.91C17.18 3.03 14.69 2 12.04 2M12.05 3.67C14.25 3.67 16.31 4.53 17.87 6.09C19.42 7.65 20.28 9.72 20.28 11.92C20.28 16.46 16.58 20.15 12.04 20.15C10.56 20.15 9.11 19.76 7.85 19L7.55 18.83L4.43 19.65L5.26 16.61L5.06 16.29C4.24 14.99 3.81 13.47 3.81 11.91C3.81 7.37 7.5 3.67 12.05 3.67Z"/></svg>
+                <span>WhatsApp Dr Mukul Kumar</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- ================= 2. BLINKIT-STYLE CATEGORY PAGE VIEW ================= -->
+  <div id="categoryView" hidden>
+    <!-- Top Sticky Header -->
+    <div class="category-sticky-nav">
+      <div class="category-sticky-nav-inner">
+        <button id="catBackToHomeBtn" class="btn-back-home">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+          <span>← Back to Home</span>
+        </button>
+
+        <div class="category-active-header">
+          <span id="catViewIcon" class="cat-view-icon">🍲</span>
+          <div>
+            <h2 id="catViewTitle" class="cat-view-title">Foods</h2>
+            <span id="catViewCountBadge" class="cat-view-count">Loading products...</span>
+          </div>
+        </div>
+
+        <div id="catQuickSwitcher" class="cat-quick-switcher">
+          <!-- Injected via JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Category Layout: Subcategories Sidebar/Rail + Product Grid -->
+    <div class="category-layout-container">
+      <!-- Subcategories Sidebar/Tabs -->
+      <aside class="category-subnav-sidebar">
+        <div class="subnav-header-label">Subcategories</div>
+        <div id="subs" class="category-subnav-list">
+          <!-- Injected via JS -->
+        </div>
+      </aside>
+
+      <!-- Category Products Area -->
+      <main class="category-products-area">
+        <div class="category-products-header-bar">
+          <h3 id="catSectionHeader">All Products</h3>
+          <span id="catProductsBadge" class="count-badge">0 items</span>
+        </div>
+
+        <!-- Category Products Grid -->
+        <section id="catGrid" class="grid"></section>
+
+        <!-- Category Empty State -->
+        <div id="catEmptyGrid" class="empty-state" hidden>
+          <div class="empty-icon">📦</div>
+          <h3>No products found in this subcategory</h3>
+          <p>Please select another subcategory tab or go back to home.</p>
+          <button class="btn-pill" onclick="st.sub=null; renderSubs(); loadProducts();" style="margin-top:12px;">View All in this Category</button>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- ================= 3. BLINKIT-STYLE LIVE SEARCH VIEW ================= -->
+  <div id="searchView" hidden>
+    <div class="search-view-header">
+      <div class="search-view-header-inner">
+        <button id="searchBackBtn" class="btn-back-home">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+          <span id="searchBackBtnText">← Back</span>
+        </button>
+
+        <div class="search-query-info">
+          <h2>Search Results for "<span id="searchQueryText"></span>"</h2>
+          <span id="searchCountBadge" class="count-badge">0 items</span>
+        </div>
+
+        <button id="searchClearBtn" class="btn-clear-search-view">Clear Search ✕</button>
+      </div>
+    </div>
+
+    <div class="search-results-container">
+      <section id="searchGrid" class="grid"></section>
+
+      <div id="searchEmptyGrid" class="empty-state" hidden>
+        <div class="empty-icon">🔍</div>
+        <h3>No matching products found</h3>
+        <p>Try searching with another keyword like "masale", "tea", "shirt", "bulb", or "veggies".</p>
+        <button id="searchEmptyBackBtn" class="btn-hero-primary" style="margin-top:16px;">Back to Home</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Slide-out Cart Drawer -->
   <div id="cartOverlay" class="cart-overlay" hidden></div>

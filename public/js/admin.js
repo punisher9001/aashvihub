@@ -1,5 +1,6 @@
 // ============================================================
 // Aashvi Hub - Admin Dashboard Controller
+// Founder & Director: Dr Mukul Kumar (Mob: 8988227729)
 // ============================================================
 
 const $ = sel => document.querySelector(sel);
@@ -20,12 +21,6 @@ document.addEventListener('DOMContentLoaded', () => {
 function setupEventListeners() {
   // Login form submit
   $('#adminLoginForm')?.addEventListener('submit', handleLogin);
-
-  // Quick fill button
-  $('#quickFillBtn')?.addEventListener('click', () => {
-    $('#usernameInput').value = 'admin';
-    $('#passwordInput').value = 'admin123';
-  });
 
   // Logout button
   $('#logoutBtn')?.addEventListener('click', () => {
@@ -50,12 +45,21 @@ function setupEventListeners() {
 
   // Add product modal controls
   $('#openAddProductBtn')?.addEventListener('click', () => {
-    $('#addProductModal').classList.add('open');
+    $('#addProductModal')?.classList.add('open');
   });
   $('#closeAddProductBtn')?.addEventListener('click', () => {
-    $('#addProductModal').classList.remove('open');
+    $('#addProductModal')?.classList.remove('open');
   });
   $('#addProductForm')?.addEventListener('submit', handleAddProduct);
+
+  // Add offer modal controls
+  $('#openAddOfferBtn')?.addEventListener('click', () => {
+    $('#addOfferModal')?.classList.add('open');
+  });
+  $('#closeAddOfferBtn')?.addEventListener('click', () => {
+    $('#addOfferModal')?.classList.remove('open');
+  });
+  $('#addOfferForm')?.addEventListener('submit', handleAddOffer);
 
   // Settings form submit
   $('#settingsForm')?.addEventListener('submit', handleSaveSettings);
@@ -88,7 +92,7 @@ async function adminApi(url, options = {}) {
       localStorage.removeItem('adminToken');
       showLogin();
     }
-    throw new Error(data.error || 'Server error occurred');
+    throw new Error(data.error || 'Server request error occurred');
   }
   return data;
 }
@@ -130,14 +134,19 @@ async function handleLogin(e) {
 // Load All Dashboard Data
 async function loadDashboardData() {
   loadOrders();
+  loadOffers();
+  loadThemes();
   loadProducts();
   loadCategories();
   loadSettings();
 }
 
-// 1. Load Orders
+// ============================================================
+// 1. ORDERS MANAGEMENT & DELIVERY PIN VERIFICATION
+// ============================================================
 async function loadOrders() {
   const tbody = $('#ordersTableBody');
+  if (!tbody) return;
   try {
     const orders = await adminApi('/api/admin/orders');
     $('#statOrders').textContent = orders.length;
@@ -150,40 +159,87 @@ async function loadOrders() {
       return;
     }
 
-    tbody.innerHTML = orders.map(o => `
-      <tr>
-        <td><b>#${o.id}</b><br><small style="color:var(--text-muted);">${new Date(o.created_at || Date.now()).toLocaleDateString()}</small></td>
-        <td><b>${escapeHtml(o.customer_name || 'Customer')}</b></td>
-        <td><a href="tel:${escapeHtml(o.phone)}">${escapeHtml(o.phone)}</a></td>
-        <td><small>${escapeHtml(o.address || '')}, ${escapeHtml(o.pincode || '')}</small></td>
-        <td><small>${escapeHtml(o.items || o.itemsList?.map(i => `${i.name} x${i.qty}`).join(', ') || 'Item')}</small></td>
-        <td><b>₹${Number(o.total || 0).toLocaleString('en-IN')}</b></td>
-        <td><span style="text-transform:uppercase; font-size:11px; font-weight:700;">${o.payment_method || 'COD'}</span></td>
-        <td>
-          <span class="status-badge status-${o.status || 'pending'}">${o.status || 'pending'}</span>
-        </td>
-        <td>
-          <select class="form-control" style="padding:6px; font-size:12px;" onchange="updateOrderStatus(${o.id}, this.value)">
-            <option value="pending" ${o.status === 'pending' ? 'selected' : ''}>Pending</option>
-            <option value="confirmed" ${o.status === 'confirmed' ? 'selected' : ''}>Confirmed</option>
-            <option value="shipped" ${o.status === 'shipped' ? 'selected' : ''}>Shipped</option>
-            <option value="delivered" ${o.status === 'delivered' ? 'selected' : ''}>Delivered</option>
-            <option value="cancelled" ${o.status === 'cancelled' ? 'selected' : ''}>Cancelled</option>
-          </select>
-        </td>
-      </tr>
-    `).join('');
+    tbody.innerHTML = orders.map(o => {
+      const orderSt = (o.order_status || o.status || 'Placed');
+      const isDelivered = orderSt.toLowerCase() === 'delivered';
+      const payMethod = (o.payment_method || 'COD').toUpperCase();
+      const payStatus = (o.payment_status || (isDelivered ? 'Paid' : 'Pending'));
+      const isPaid = payStatus.toLowerCase() === 'paid';
+
+      return `
+        <tr>
+          <td>
+            <b>#${o.id}</b><br>
+            <small style="color:var(--text-muted);">${new Date(o.created_at || Date.now()).toLocaleDateString()}</small>
+          </td>
+          <td><b>${escapeHtml(o.customer_name || 'Customer')}</b></td>
+          <td><a href="tel:${escapeHtml(o.phone)}">${escapeHtml(o.phone)}</a></td>
+          <td><small>${escapeHtml(o.address || '')}, ${escapeHtml(o.pincode || '')}</small></td>
+          <td><small>${escapeHtml(o.items || o.itemsList?.map(i => `${i.name} x${i.qty}`).join(', ') || 'Item')}</small></td>
+          <td><b>₹${Number(o.total || 0).toLocaleString('en-IN')}</b></td>
+          <td>
+            <span style="font-weight:700; font-size:12px;">${payMethod}</span><br>
+            <span class="badge-status" style="margin-top:4px; ${isPaid ? 'background:#dcfce7; color:#15803d;' : 'background:#fef3c7; color:#b45309;'}">
+              ${payStatus}
+            </span>
+          </td>
+          <td>
+            <select class="form-control" style="padding:6px; font-size:12px; font-weight:600; min-width:110px;" onchange="updateOrderStatus(${o.id}, this.value)">
+              <option value="Placed" ${orderSt.toLowerCase() === 'placed' ? 'selected' : ''}>Placed</option>
+              <option value="Packed" ${orderSt.toLowerCase() === 'packed' ? 'selected' : ''}>Packed</option>
+              <option value="Shipped" ${orderSt.toLowerCase() === 'shipped' ? 'selected' : ''}>Shipped</option>
+              <option value="Delivered" ${orderSt.toLowerCase() === 'delivered' ? 'selected' : ''}>Delivered</option>
+              <option value="Cancelled" ${orderSt.toLowerCase() === 'cancelled' ? 'selected' : ''}>Cancelled</option>
+            </select>
+          </td>
+          <td>
+            ${isDelivered ? `
+              <div style="color:#16a34a; font-weight:700; font-size:13px;">✓ Delivered</div>
+              <small style="color:var(--text-muted);">PIN: <b>${escapeHtml(o.delivery_pin || '----')}</b></small>
+            ` : `
+              <div style="display:flex; gap:6px; align-items:center;">
+                <input type="text" id="pinInput_${o.id}" maxlength="4" placeholder="4-digit PIN" style="width:85px; padding:6px 8px; font-size:13px; font-weight:700; letter-spacing:2px; text-align:center; border:1.5px solid var(--border); border-radius:6px; outline:none;">
+                <button class="btn btn-primary btn-sm" onclick="verifyOrderPin(${o.id})">Verify</button>
+              </div>
+            `}
+          </td>
+        </tr>
+      `;
+    }).join('');
   } catch (e) {
     console.error('Error loading orders:', e);
   }
 }
 
-// Update Order Status
+// Verify Delivery PIN (Marks Order as Delivered & Payment as Paid)
+window.verifyOrderPin = async function(id) {
+  const pinInput = $(`#pinInput_${id}`);
+  const pin = (pinInput ? pinInput.value : '').trim();
+
+  if (!pin || pin.length !== 4) {
+    alert('Please enter the 4-digit Delivery PIN provided by the customer.');
+    if (pinInput) pinInput.focus();
+    return;
+  }
+
+  try {
+    const res = await adminApi(`/api/admin/orders/${id}/verify-pin`, {
+      method: 'POST',
+      body: JSON.stringify({ pin })
+    });
+    alert(res.message || '✓ Delivery PIN verified successfully! Order marked as Delivered and Paid.');
+    loadOrders();
+  } catch (err) {
+    alert('Verification Failed: ' + err.message);
+  }
+};
+
+// Update Order Status via Dropdown
 window.updateOrderStatus = async function(id, status) {
   try {
     await adminApi(`/api/admin/orders/${id}`, {
       method: 'PATCH',
-      body: JSON.stringify({ status })
+      body: JSON.stringify({ status, order_status: status })
     });
     loadOrders();
   } catch (err) {
@@ -191,9 +247,118 @@ window.updateOrderStatus = async function(id, status) {
   }
 };
 
-// 2. Load Products
+// ============================================================
+// 2. OFFERS & PROMO CODES MANAGEMENT
+// ============================================================
+async function loadOffers() {
+  const tbody = $('#offersTableBody');
+  if (!tbody) return;
+  try {
+    const offers = await adminApi('/api/admin/offers');
+    if (!offers || offers.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:24px; color:var(--text-muted);">No active offers created yet. Click '+ Add New Offer' above.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = offers.map(off => `
+      <tr>
+        <td><b style="letter-spacing:1px; color:var(--primary); font-size:15px;">${escapeHtml(off.code)}</b></td>
+        <td><b>${off.discount_percent}% OFF</b></td>
+        <td>₹${off.min_order || 0}</td>
+        <td>${off.expires_at ? new Date(off.expires_at).toLocaleDateString() : 'No Expiry'}</td>
+        <td><span class="badge-status">Active</span></td>
+        <td>
+          <button class="btn btn-danger btn-sm" onclick="deleteOffer(${off.id})">Delete</button>
+        </td>
+      </tr>
+    `).join('');
+  } catch (e) {
+    console.error('Error loading offers:', e);
+  }
+}
+
+async function handleAddOffer(e) {
+  e.preventDefault();
+  const code = $('#newOfferCode').value.trim().toUpperCase();
+  const discount_percent = Number($('#newOfferPercent').value);
+  const min_order = Number($('#newOfferMinOrder').value) || 0;
+  const expires_at = $('#newOfferExpires').value || null;
+
+  try {
+    await adminApi('/api/admin/offers', {
+      method: 'POST',
+      body: JSON.stringify({ code, discount_percent, min_order, expires_at })
+    });
+    $('#addOfferModal')?.classList.remove('open');
+    $('#addOfferForm')?.reset();
+    loadOffers();
+    alert(`✓ Offer '${code}' created and activated successfully!`);
+  } catch (err) {
+    alert('Failed to create offer: ' + err.message);
+  }
+}
+
+window.deleteOffer = async function(id) {
+  if (!confirm('Are you sure you want to delete this offer?')) return;
+  try {
+    await adminApi(`/api/admin/offers/${id}`, { method: 'DELETE' });
+    loadOffers();
+  } catch (err) {
+    alert('Failed to delete offer: ' + err.message);
+  }
+};
+
+// ============================================================
+// 3. THEMES & FESTIVALS MANAGEMENT
+// ============================================================
+async function loadThemes() {
+  const container = $('#themesGrid');
+  if (!container) return;
+  try {
+    const data = await adminApi('/api/admin/themes');
+    const currentTheme = data.currentTheme || 'default';
+    const themes = data.themes || [];
+
+    container.innerHTML = themes.map(t => {
+      const isActive = t.key === currentTheme;
+      return `
+        <div style="background:var(--card); border:${isActive ? '2px solid var(--primary)' : '1px solid var(--border)'}; border-radius:14px; padding:20px; display:flex; flex-direction:column; justify-content:space-between; box-shadow:0 4px 6px -1px rgba(0,0,0,0.03); position:relative;">
+          ${isActive ? `<span style="position:absolute; top:12px; right:12px; background:#dcfce7; color:#15803d; font-size:11px; font-weight:700; padding:3px 8px; border-radius:12px;">Active Now</span>` : ''}
+          <div>
+            <div style="font-size:32px; margin-bottom:8px;">${t.icon || '✨'}</div>
+            <div style="font-family:'Outfit',sans-serif; font-size:17px; font-weight:700; color:var(--dark);">${escapeHtml(t.name)}</div>
+            <div style="font-size:13px; color:var(--text-muted); margin:6px 0 16px 0; line-height:1.4;">${escapeHtml(t.desc)}</div>
+          </div>
+          <button class="btn btn-sm ${isActive ? 'btn-secondary' : 'btn-primary'}" onclick="applyTheme('${t.key}')" ${isActive ? 'disabled' : ''}>
+            ${isActive ? '✓ Currently Active' : 'Apply Theme to Store'}
+          </button>
+        </div>
+      `;
+    }).join('');
+  } catch (e) {
+    console.error('Error loading themes:', e);
+  }
+}
+
+window.applyTheme = async function(themeKey) {
+  try {
+    const res = await adminApi('/api/admin/theme', {
+      method: 'POST',
+      body: JSON.stringify({ theme_key: themeKey })
+    });
+    alert(res.message || `✓ Theme switched to '${themeKey}' successfully!`);
+    loadThemes();
+  } catch (err) {
+    alert('Failed to apply theme: ' + err.message);
+  }
+};
+
+// ============================================================
+// 4. PRODUCTS MANAGEMENT
+// ============================================================
 async function loadProducts() {
   const tbody = $('#productsTableBody');
+  if (!tbody) return;
   try {
     const products = await adminApi('/api/admin/products');
     $('#statProducts').textContent = products.length;
@@ -222,7 +387,6 @@ async function loadProducts() {
   }
 }
 
-// Add Product
 async function handleAddProduct(e) {
   e.preventDefault();
   const newProd = {
@@ -241,15 +405,15 @@ async function handleAddProduct(e) {
       method: 'POST',
       body: JSON.stringify(newProd)
     });
-    $('#addProductModal').classList.remove('open');
-    $('#addProductForm').reset();
+    $('#addProductModal')?.classList.remove('open');
+    $('#addProductForm')?.reset();
     loadProducts();
+    alert('✓ Product added successfully!');
   } catch (err) {
     alert('Failed to add product: ' + err.message);
   }
 }
 
-// Delete Product
 window.deleteProduct = async function(id) {
   if (!confirm('Are you sure you want to remove this product?')) return;
   try {
@@ -260,9 +424,12 @@ window.deleteProduct = async function(id) {
   }
 };
 
-// 3. Load Categories
+// ============================================================
+// 5. CATEGORIES
+// ============================================================
 async function loadCategories() {
   const tbody = $('#categoriesTableBody');
+  if (!tbody) return;
   try {
     const cats = await adminApi('/api/admin/categories');
     $('#statCategories').textContent = cats.length;
@@ -280,7 +447,9 @@ async function loadCategories() {
   }
 }
 
-// 4. Load & Save Settings
+// ============================================================
+// 6. STORE SETTINGS
+// ============================================================
 async function loadSettings() {
   try {
     const s = await adminApi('/api/admin/settings');
@@ -312,8 +481,10 @@ async function handleSaveSettings(e) {
       body: JSON.stringify(settingsData)
     });
     const msg = $('#settingsSavedMsg');
-    msg.style.display = 'inline';
-    setTimeout(() => { msg.style.display = 'none'; }, 2500);
+    if (msg) {
+      msg.style.display = 'inline';
+      setTimeout(() => { msg.style.display = 'none'; }, 2500);
+    }
   } catch (err) {
     alert('Failed to save settings: ' + err.message);
   }

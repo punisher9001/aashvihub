@@ -569,17 +569,32 @@ app.get('/api/admin/products', requireAdmin, wrap(async (req, res) => {
 }));
 
 app.post('/api/admin/products', requireAdmin, wrap(async (req, res) => {
-  const prodData = req.body;
+  const prodData = { ...req.body };
   if (Array.isArray(req.body.variants)) prodData.variants = req.body.variants;
+  if (Array.isArray(req.body.colors)) prodData.colors = req.body.colors;
+  if (Array.isArray(req.body.sizes)) prodData.sizes = req.body.sizes;
   if (req.body.category_id) prodData.category_id = Number(req.body.category_id);
+  if (req.body.subcategory_id) prodData.subcategory_id = Number(req.body.subcategory_id);
 
   const { name, subcategory_id, price, mrp, stock, image, description, details } = req.body;
   if (!name || !price) return res.status(400).json({ error: 'Product name and price are required' });
 
+  let sbCreated = null;
+  if (supabaseDb.isConfigured()) {
+    try {
+      sbCreated = await supabaseDb.createProduct(prodData);
+    } catch (e) {
+      console.warn('Supabase createProduct warning:', e.message);
+    }
+  }
+
   const nextId = (localDb.data.products.reduce((max, p) => Math.max(max, p.id || 0), 0)) + 1;
   const newProduct = {
-    id: nextId,
+    id: sbCreated?.id || nextId,
+    category_id: prodData.category_id || null,
     subcategory_id: Number(subcategory_id) || 1,
+    category: prodData.category || '',
+    subcategory: prodData.subcategory || '',
     name: String(name).trim(),
     description: String(description || '').trim(),
     details: String(details || '').trim(),
@@ -587,13 +602,16 @@ app.post('/api/admin/products', requireAdmin, wrap(async (req, res) => {
     mrp: Number(mrp || price),
     price: Number(price),
     unit: req.body.unit || '1 unit',
-    stock: Number(stock ?? 50),
+    stock: Number(stock ?? (prodData.variants ? prodData.variants.reduce((s, v) => s + (Number(v.stock) || 0), 0) : 50)),
+    variants: prodData.variants || [],
+    colors: prodData.colors || [],
+    sizes: prodData.sizes || [],
     is_available: 1
   };
   localDb.data.products.unshift(newProduct);
   localDb.save();
 
-  res.json({ success: true, product: newProduct });
+  res.json({ success: true, product: sbCreated || newProduct });
 }));
 
 app.put('/api/admin/products/:id', requireAdmin, wrap(async (req, res) => {
@@ -626,7 +644,11 @@ app.put('/api/admin/products/:id', requireAdmin, wrap(async (req, res) => {
       p.variants = prodData.variants;
       p.stock = prodData.variants.reduce((s, v) => s + (Number(v.stock) || 0), 0);
       p.is_available = p.stock > 0 ? 1 : 0;
-    } else if (prodData.stock !== undefined) {
+    }
+    if (Array.isArray(prodData.colors)) p.colors = prodData.colors;
+    if (Array.isArray(prodData.sizes)) p.sizes = prodData.sizes;
+    if (prodData.category) p.category = prodData.category;
+    if (prodData.subcategory) p.subcategory = prodData.subcategory; else if (prodData.stock !== undefined) {
       p.stock = Number(prodData.stock);
       p.is_available = p.stock > 0 ? 1 : 0;
     }
@@ -713,6 +735,7 @@ app.post('/api/auth/login', wrap(async (req, res) => {
   const token = jwt.sign({ id: user.id, name: user.name, phone: user.phone, role: 'customer' }, JWT_SECRET, { expiresIn: '30d' });
   res.json({ success: true, token, user: { id: user.id, name: user.name, phone: user.phone, email: user.email } });
 }));
+
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, async () => {

@@ -1,3 +1,7 @@
+/**
+ * Aashvi Hub - Supabase Cloud Database Client
+ * Uses native fetch (Node 18+) against Supabase PostgREST API.
+ */
 
 const SUPABASE_URL = (process.env.SUPABASE_URL || '').replace(/\/+$/, '');
 const SUPABASE_KEY = process.env.SUPABASE_KEY || process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '';
@@ -81,16 +85,26 @@ const supabaseDb = {
   parseProductVariants(p) {
     if (!p) return null;
     let variants = [];
+    let colors = Array.isArray(p.colors) ? p.colors : [];
+    let sizes = Array.isArray(p.sizes) ? p.sizes : [];
     let detailsText = p.details || '';
     let categoryId = p.category_id || null;
+    let subcategoryId = p.subcategory_id || null;
+    let categoryName = p.category || '';
+    let subcategoryName = p.subcategory || p.sub_category || '';
 
     if (typeof p.details === 'string' && p.details.trim().startsWith('{')) {
       try {
         const parsed = JSON.parse(p.details);
         if (parsed && typeof parsed === 'object') {
           if (Array.isArray(parsed.variants)) variants = parsed.variants;
+          if (Array.isArray(parsed.colors) && !colors.length) colors = parsed.colors;
+          if (Array.isArray(parsed.sizes) && !sizes.length) sizes = parsed.sizes;
           if (parsed.detailsText !== undefined) detailsText = parsed.detailsText;
           if (parsed.category_id !== undefined) categoryId = parsed.category_id;
+          if (parsed.subcategory_id !== undefined) subcategoryId = parsed.subcategory_id;
+          if (parsed.category !== undefined) categoryName = parsed.category;
+          if (parsed.subcategory !== undefined) subcategoryName = parsed.subcategory;
         }
       } catch (e) {
         // Fallback to raw string
@@ -119,7 +133,12 @@ const supabaseDb = {
     return {
       ...p,
       details: detailsText,
-      category_id: categoryId,
+      category_id: categoryId || p.category_id,
+      subcategory_id: subcategoryId || p.subcategory_id,
+      category: categoryName || p.category,
+      subcategory: subcategoryName || p.subcategory,
+      colors,
+      sizes,
       variants,
       stock: totalStock,
       available: Boolean(p.is_available && totalStock > 0),
@@ -129,17 +148,25 @@ const supabaseDb = {
   },
 
   // Helper: Encode Variant Matrix & Category safely into existing details text field (zero SQL migration needed)
-  encodeProductDetails(detailsText, variants, categoryId) {
+  encodeProductDetails(detailsText, variants, categoryId, colors, subcategoryId, categoryName, subcategoryName, sizes) {
     const cleanVariants = Array.isArray(variants) ? variants.map(v => ({
       name: String(v.name || 'Standard').trim(),
       price: v.price !== undefined && !isNaN(Number(v.price)) && Number(v.price) > 0 ? Number(v.price) : undefined,
       stock: Math.max(0, parseInt(v.stock, 10) || 0)
     })).filter(v => v.name) : [];
 
+    const cleanColors = Array.isArray(colors) ? colors.map(c => String(c).trim()).filter(Boolean) : [];
+    const cleanSizes = Array.isArray(sizes) ? sizes.map(s => String(s).trim()).filter(Boolean) : cleanVariants.map(v => v.name);
+
     return JSON.stringify({
       detailsText: String(detailsText || '').trim(),
       variants: cleanVariants,
-      category_id: categoryId ? Number(categoryId) : null
+      colors: cleanColors,
+      sizes: cleanSizes,
+      category_id: categoryId ? Number(categoryId) : null,
+      subcategory_id: subcategoryId ? Number(subcategoryId) : null,
+      category: categoryName || '',
+      subcategory: subcategoryName || ''
     });
   },
 
@@ -204,7 +231,16 @@ const supabaseDb = {
       : [{ name: prod.unit || 'Standard', stock: Math.max(0, parseInt(prod.stock, 10) || 50) }];
 
     const totalStock = cleanVariants.reduce((s, v) => s + v.stock, 0);
-    const encodedDetails = this.encodeProductDetails(prod.details || prod.description, cleanVariants, prod.category_id);
+    const encodedDetails = this.encodeProductDetails(
+      prod.details || prod.description,
+      cleanVariants,
+      prod.category_id,
+      prod.colors,
+      prod.subcategory_id,
+      prod.category,
+      prod.subcategory,
+      prod.sizes
+    );
 
     const body = {
       subcategory_id: Number(prod.subcategory_id) || 1,
@@ -231,13 +267,23 @@ const supabaseDb = {
     let encodedDetails = undefined;
     let totalStock = prod.stock !== undefined ? Number(prod.stock) : undefined;
 
-    if (Array.isArray(prod.variants)) {
-      const cleanVariants = prod.variants.map(v => ({
+    if (Array.isArray(prod.variants) || prod.colors !== undefined || prod.category_id !== undefined) {
+      const cleanVariants = Array.isArray(prod.variants) ? prod.variants.map(v => ({
         name: String(v.name || 'Standard').trim(),
+        price: v.price !== undefined ? Number(v.price) : undefined,
         stock: Math.max(0, parseInt(v.stock, 10) || 0)
-      }));
-      totalStock = cleanVariants.reduce((s, v) => s + v.stock, 0);
-      encodedDetails = this.encodeProductDetails(prod.details || prod.description, cleanVariants, prod.category_id);
+      })) : [];
+      totalStock = cleanVariants.length ? cleanVariants.reduce((s, v) => s + v.stock, 0) : (prod.stock !== undefined ? Number(prod.stock) : 50);
+      encodedDetails = this.encodeProductDetails(
+        prod.details || prod.description,
+        cleanVariants,
+        prod.category_id,
+        prod.colors,
+        prod.subcategory_id,
+        prod.category,
+        prod.subcategory,
+        prod.sizes
+      );
     }
 
     const body = {};

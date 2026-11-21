@@ -1,4 +1,75 @@
 
+// ============================================================
+// Product Colors State & Manager
+// ============================================================
+let activeProductColors = [];
+
+function renderSelectedColors() {
+  const container = $('#selectedColorsContainer');
+  if (!container) return;
+  if (!activeProductColors.length) {
+    container.innerHTML = '<span style="font-size:11.5px; color:#94a3b8; font-style:italic;">No colors selected (default standard)</span>';
+    return;
+  }
+  container.innerHTML = activeProductColors.map((color, idx) => `
+    <span class="admin-color-tag">
+      <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:${getColorHex(color)};"></span>
+      ${escapeHtml(color)}
+      <button type="button" onclick="removeProductColor(${idx})" title="Remove color">✕</button>
+    </span>
+  `).join('');
+}
+
+function addProductColor(color) {
+  const clean = String(color || '').trim();
+  if (!clean) return;
+  if (!activeProductColors.some(c => c.toLowerCase() === clean.toLowerCase())) {
+    activeProductColors.push(clean);
+    renderSelectedColors();
+  }
+}
+
+window.removeProductColor = function(idx) {
+  activeProductColors.splice(idx, 1);
+  renderSelectedColors();
+};
+
+function setupColorChipButtons() {
+  $$('.color-chip-btn').forEach(btn => {
+    btn.onclick = () => addProductColor(btn.dataset.color);
+  });
+
+  const customBtn = $('#addCustomColorBtn');
+  const customInput = $('#customColorInput');
+  if (customBtn && customInput) {
+    customBtn.onclick = () => {
+      addProductColor(customInput.value);
+      customInput.value = '';
+    };
+    customInput.onkeydown = (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        addProductColor(customInput.value);
+        customInput.value = '';
+      }
+    };
+  }
+}
+
+function getColorHex(name) {
+  const map = {
+    red: '#ef4444', blue: '#3b82f6', black: '#0f172a', white: '#f8fafc',
+    green: '#10b981', yellow: '#eab308', pink: '#ec4899', navy: '#1e3a8a',
+    maroon: '#881337', grey: '#64748b', gray: '#64748b', orange: '#f97316',
+    purple: '#a855f7', brown: '#78350f', beige: '#f5f5dc', olive: '#808000'
+  };
+  return map[String(name).toLowerCase()] || '#94a3b8';
+}
+
+
+// ============================================================
+// Enhanced Category-Aware Size & Weight/Gram Variant Matrix
+// ============================================================
 let globalCatalog = [];
 let allAdminProducts = [];
 
@@ -165,6 +236,7 @@ function setupEventListeners() {
   $('#newProdCategory')?.addEventListener('change', (e) => handleCategoryChange(e.target.value));
   $('#addVariantRowBtn')?.addEventListener('click', () => renderVariantRow('', 10));
   setupPresetButtons();
+  setupColorChipButtons();
   $('#newProdCategory')?.addEventListener('change', (e) => handleCategoryChange(e.target.value));
   $('#addVariantRowBtn')?.addEventListener('click', () => renderVariantRow('', 10));
 
@@ -531,6 +603,8 @@ window.openEditProduct = function(id) {
   $('#newProdUnit').value = p.unit || '';
   $('#newProdImage').value = p.image || '';
   $('#newProdDesc').value = p.description || '';
+  activeProductColors = Array.isArray(p.colors) ? [...p.colors] : [];
+  renderSelectedColors();
 
   // Set category and subcategory
   const catVal = p.category_id || (p.category ? 3 : '');
@@ -564,10 +638,16 @@ async function handleAddProduct(e) {
   const subcategoryId = Number($('#newProdSubcategory')?.value || $('#newProdCategory')?.value || 1);
   const totalStock = variants.length > 0 ? variants.reduce((s, v) => s + v.stock, 0) : 50;
 
+  const catObj = globalCatalog.find(c => String(c.id) === String($('#newProdCategory').value));
+  const subObj = catObj && Array.isArray(catObj.subs) ? catObj.subs.find(s => String(s.id) === String(subcategoryId)) : null;
   const prodPayload = {
     name: $('#newProdName').value.trim(),
     category_id: Number($('#newProdCategory').value) || null,
     subcategory_id: subcategoryId,
+    category: catObj ? catObj.name : '',
+    subcategory: subObj ? subObj.name : '',
+    colors: activeProductColors,
+    sizes: variants.map(v => v.name),
     price: Number($('#newProdPrice').value),
     mrp: Number($('#newProdMrp').value) || Number($('#newProdPrice').value),
     stock: totalStock,

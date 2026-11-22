@@ -1,7 +1,6 @@
 html, body { overflow-x: hidden; width: 100%; max-width: 100vw; -webkit-tap-highlight-color: transparent; }
 /* ==========================================================================
-   Aashvi Hub - Premium Quick-Commerce & Healthcare Store
-   Curated by Dr Mukul Kumar (Mob: 8988227729)
+   Aashvi Hub - Premium Quick-Commerce Store
    ========================================================================== */
 
 :root {
@@ -3670,4 +3669,16 @@ body[dir="rtl"] .toast-container {
   font-weight: bold;
   cursor: pointer;
   padding: 0 2px;
+}
+
+/* COD Only & Clean Handover Overrides */
+.floating-wa-container,
+.btn-whatsapp-order,
+.whatsapp-pay-option,
+.whatsapp-btn,
+.whatsapp-section,
+.btn-doc-wa,
+.btn-doc-call,
+.btn-success-wa {
+  display: none !important;
 }

@@ -78,7 +78,6 @@ window.onVariantSelected = function(productId, variantName) {
 
 // ==========================================================================
 // Aashvi Hub - Core Store Logic
-// Founder & Director: Dr Mukul Kumar (Mob: 8988227729)
 // ==========================================================================
 
 const $ = s => document.querySelector(s);
@@ -110,8 +109,6 @@ const st = {
   searchResults: [],
   cfg: {
     shop: 'Aashvi Hub',
-    owner_name: 'Dr Mukul Kumar',
-    owner_phone: '8988227729',
     free_delivery_above: 499,
     delivery_fee: 40
   },
@@ -729,8 +726,6 @@ function openDetail(id) {
   const colors = Array.isArray(p.colors) && p.colors.length > 0 ? p.colors : [];
   const activeColor = selectedColors[p.id] || colors[0] || '';
 
-  const waText = encodeURIComponent(`Hello Dr Mukul Kumar, I would like to order "${p.name}" (${activeVar ? activeVar.name : p.unit}${activeColor ? `, Color: ${activeColor}` : ''}) from Aashvi Hub at ${inr(currentPrice)}.`);
-
   const colorsHtml = colors.length > 0 ? `
     <div class="modal-color-box">
       <div class="modal-color-label">Select Color: <b>${esc(activeColor)}</b></div>
@@ -792,7 +787,7 @@ function openDetail(id) {
       ${pillsHtml}
 
       <div class="modal-doctor-box">
-        <strong>🩺 Quality Checked • Dr Mukul Kumar (8988227729)</strong>
+        <strong>✓ 100% Quality Checked</strong>
         <p>${esc(p.description || 'Authentic quality assured with direct dispatch from central hub.')}</p>
       </div>
 
@@ -807,9 +802,6 @@ function openDetail(id) {
         <button id="modalAddBtn" class="primary-btn" style="flex:1" ${isVarOOS ? 'disabled style="flex:1; opacity:0.5;"' : ''}>
           ${isVarOOS ? 'Out of Stock' : (inCart ? `In Cart (${inCart}) • Add More` : `Add to Cart • ${inr(currentPrice)}`)}
         </button>
-        <a href="https://wa.me/918988227729?text=${waText}" target="_blank" rel="noopener" class="btn-whatsapp-order" style="display:flex;align-items:center;padding:12px 18px;border-radius:var(--radius-sm)">
-          <span>WhatsApp Order</span>
-        </a>
       </div>
     </div>
   `;
@@ -1450,7 +1442,7 @@ $('#trackSubmitBtn').onclick = async () => {
           ` : ''}
 
           <div style="font-size:11.5px;color:#15803d;margin-top:8px">
-            Supervised by Dr Mukul Kumar (Mob: 8988227729)
+            100% Quality Checked &amp; Verified Packaging
           </div>
         </div>
       `;
@@ -1495,56 +1487,10 @@ $('#checkout').onsubmit = async ev => {
   const cName = $('#cName').value.trim();
   const cPhone = $('#cPhone').value.trim();
   const cAddr = $('#cAddr').value.trim();
-  const method = document.querySelector('input[name="pay"]:checked').value;
 
   const submitBtn = $('#placeOrderBtn');
   submitBtn.disabled = true;
-  submitBtn.textContent = 'Processing Order...';
-
-  // Direct WhatsApp order handling
-  if (method === 'whatsapp') {
-    const t = calculateTotals();
-    const orderItemsSummary = items.map(it => {
-      const p = cart[it.id].p;
-      return `• ${p.name} (${p.unit}) x ${it.qty} = ${inr(p.price * it.qty)}`;
-    }).join('\n');
-
-    const waText = encodeURIComponent(
-      `*AASHVI HUB NEW ORDER REQUEST*\n` +
-      `Owner: Dr Mukul Kumar (8988227729)\n` +
-      `--------------------------------\n` +
-      `*Customer:* ${cName}\n` +
-      `*Phone:* ${cPhone}\n` +
-      `*Address:* ${cAddr}, PIN: ${pin}\n` +
-      `--------------------------------\n` +
-      `*Items Ordered:*\n${orderItemsSummary}\n` +
-      `--------------------------------\n` +
-      `*Total to Pay:* ${inr(t.total)}\n` +
-      `*Payment Method:* Direct WhatsApp / UPI / COD\n\n` +
-      `Please confirm order dispatch. Thank you!`
-    );
-
-    try {
-      const o = await api('/api/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          items,
-          coupon: st.code,
-          method: 'cod',
-          customer: { name: cName, phone: cPhone, address: cAddr, pincode: pin }
-        })
-      });
-      showOrderSuccess(o, true, waText);
-    } catch (e) {
-      window.open(`https://wa.me/918988227729?text=${waText}`, '_blank');
-      showToast('Opening WhatsApp to complete order...');
-    } finally {
-      submitBtn.disabled = false;
-      submitBtn.textContent = T('placeOrder');
-    }
-    return;
-  }
+  submitBtn.textContent = 'Placing Order (COD)...';
 
   try {
     const o = await api('/api/orders', {
@@ -1553,39 +1499,12 @@ $('#checkout').onsubmit = async ev => {
       body: JSON.stringify({
         items,
         coupon: st.code,
-        method: method === 'online' ? 'online' : 'cod',
+        method: 'cod',
         customer: { name: cName, phone: cPhone, address: cAddr, pincode: pin }
       })
     });
 
-    if (method === 'cod') {
-      showOrderSuccess(o, false);
-      submitBtn.disabled = false;
-      submitBtn.textContent = T('placeOrder');
-      return;
-    }
-
-    new Razorpay({
-      key: st.cfg.razorpay_key,
-      amount: o.amount,
-      currency: 'INR',
-      order_id: o.razorpay_order_id,
-      name: st.cfg.shop,
-      description: 'Order #' + o.order_id,
-      prefill: { name: cName, contact: cPhone },
-      handler: async res => {
-        try {
-          await api('/api/payment/verify', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ order_id: o.order_id, ...res })
-          });
-          showOrderSuccess(o, false);
-        } catch (e) {
-          msg.textContent = e.message;
-        }
-      }
-    }).open();
+    showOrderSuccess(o);
   } catch (e) {
     msg.textContent = e.message;
   } finally {
@@ -1595,7 +1514,7 @@ $('#checkout').onsubmit = async ev => {
 };
 
 // Show Order Success Celebration Modal
-function showOrderSuccess(o, isWhatsapp = false, prefillWa = '') {
+function showOrderSuccess(o) {
   cart = {};
   localStorage.cart = '{}';
   renderCart();
@@ -1605,8 +1524,8 @@ function showOrderSuccess(o, isWhatsapp = false, prefillWa = '') {
   $('#successOrderId').textContent = `Order Reference: #${o.order_id}`;
   $('#successDetailsCard').innerHTML = `
     <div><strong>Payable Amount:</strong> ${inr(o.total)}</div>
-    <div><strong>Payment:</strong> ${(o.payment_method || 'COD').toUpperCase()} (${o.payment_status || 'Pending'})</div>
-    <div><strong>Delivery ETA:</strong> ${o.eta.min}-${o.eta.max} Days (${esc(o.eta.label)})</div>
+    <div><strong>Payment Method:</strong> CASH ON DELIVERY (COD) (${o.payment_status || 'Pending'})</div>
+    <div><strong>Delivery ETA:</strong> ${o.eta ? `${o.eta.min}-${o.eta.max} Days (${esc(o.eta.label || '')})` : '3-5 Days'}</div>
     ${o.delivery_pin ? `
       <div style="margin:14px 0 10px 0; padding:12px; background:#ecfdf5; border:1.5px dashed #059669; border-radius:10px; text-align:center;">
         <div style="font-size:11px; font-weight:700; text-transform:uppercase; color:#047857; letter-spacing:0.5px;">Your 4-Digit Delivery Verification PIN</div>
@@ -1615,18 +1534,12 @@ function showOrderSuccess(o, isWhatsapp = false, prefillWa = '') {
       </div>
     ` : ''}
     <div style="margin-top:6px;color:#15803d">
-      Dispatched directly under supervision of <strong>Dr Mukul Kumar</strong> (Mob: 8988227729).
+      Dispatched safely with 100% genuine quality packaging. Pay cash upon delivery.
     </div>
   `;
 
   const waBtn = $('#successWhatsappBtn');
-  const waMsg = prefillWa || encodeURIComponent(
-    `Hello Dr Mukul Kumar, I have placed Order #${o.order_id} for ${inr(o.total)} on Aashvi Hub. Please confirm my dispatch.`
-  );
-
-  waBtn.onclick = () => {
-    window.open(`https://wa.me/918988227729?text=${waMsg}`, '_blank');
-  };
+  if (waBtn) waBtn.style.display = 'none';
 
   $('#closeSuccessBtn').onclick = () => {
     $('#successModal').hidden = true;

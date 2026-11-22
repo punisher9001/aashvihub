@@ -1466,30 +1466,37 @@ body[dir="rtl"] .discount-badge {
 .cart-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.6);
+  background: rgba(15, 23, 42, 0.65);
   backdrop-filter: blur(4px);
-  z-index: 50;
+  z-index: 9999;
   animation: fadeIn 0.25s ease;
 }
 
-.panel {
+#cartPanel, #cartDrawer, #cartModal, .panel, .cart-drawer {
   position: fixed;
   top: 0;
   bottom: 0;
   right: 0;
-  width: min(450px, 100%);
-  background: var(--card-bg);
-  z-index: 60;
+  width: min(480px, 100%);
+  height: 100vh;
+  height: 100dvh;
+  background: var(--card-bg, #ffffff);
+  z-index: 10000;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   padding: 22px;
   box-shadow: -10px 0 35px rgba(0, 0, 0, 0.25);
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 16px;
   animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-body[dir="rtl"] .panel {
+body[dir="rtl"] #cartPanel,
+body[dir="rtl"] #cartDrawer,
+body[dir="rtl"] #cartModal,
+body[dir="rtl"] .panel,
+body[dir="rtl"] .cart-drawer {
   right: auto;
   left: 0;
   animation: slideInLeft 0.3s cubic-bezier(0.16, 1, 0.3, 1);
@@ -1501,6 +1508,12 @@ body[dir="rtl"] .panel {
   align-items: center;
   border-bottom: 1px solid var(--border-color);
   padding-bottom: 14px;
+  position: sticky;
+  top: -22px;
+  background: #ffffff;
+  z-index: 10;
+  margin: -22px -22px 0 -22px;
+  padding: 22px 22px 14px 22px;
 }
 
 .panel-title-group {
@@ -1569,20 +1582,19 @@ body[dir="rtl"] .panel {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  max-height: 260px;
-  overflow-y: auto;
-  padding-right: 4px;
+  padding: 4px 2px;
 }
 
 .cart-line {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px;
-  background: #f8fafc;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  padding: 12px;
+  background: #ffffff;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-color);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .cart-line-img {
@@ -1607,6 +1619,27 @@ body[dir="rtl"] .panel {
   font-size: 12.5px;
   color: var(--primary);
   font-weight: 700;
+}
+
+.btn-cart-remove {
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 15px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  transition: all 0.2s ease;
+}
+
+.btn-cart-remove:hover {
+  background: #fecaca;
+  color: #991b1b;
+  transform: scale(1.05);
 }
 
 /* Coupon Section */

@@ -194,11 +194,15 @@ app.post('/api/coupon', wrap(async (req, res) => {
   const code = String(req.body.code || '').toUpperCase().trim();
   const coupon = await localDb.getCoupon(code);
   if (!coupon) return res.status(404).json({ error: 'Invalid or expired coupon code' });
+  const discount = Number(coupon.discount_percent || coupon.discount || coupon.discount_value || coupon.value || 0);
+  const minOrder = Number(coupon.min_order || coupon.min_amount || coupon.min_order_amount || 0);
   res.json({
     code: coupon.code,
     description: coupon.description,
-    discount_percent: Number(coupon.discount_percent || 0),
-    min_order: Number(coupon.min_order || 0)
+    discount_percent: discount,
+    percent: discount,
+    discount: discount,
+    min_order: minOrder
   });
 }));
 

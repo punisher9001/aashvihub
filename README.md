@@ -18,7 +18,7 @@ Quick-commerce & Doctor-Curated Wellness Store with all-India delivery.
    `npm start`
 4. Open your browser:
    - **Customer Storefront**: `http://localhost:3000`
-   - **Admin Management Portal**: `http://localhost:3000/admin.html` (Default: `admin` / `admin123`)
+   - **Admin Management Portal**: `http://localhost:3000/admin.html`
 
 ## Contact & Assistance
 For inquiries, orders, or support, reach out to **Dr Mukul Kumar** at **+91 8988227729**.

@@ -935,10 +935,21 @@ function changeQuantity(id, delta) {
 
 // Totals Calculation
 function calculateTotals() {
-  const sub = Object.values(cart).reduce((sum, item) => sum + item.p.price * item.qty, 0);
-  const disc = st.pct && sub >= st.minOrder ? Math.round(sub * st.pct) / 100 : 0;
-  const freeAbove = Number(st.cfg.free_delivery_above || 499);
-  const fee = (!sub || (freeAbove > 0 && (sub - disc) >= freeAbove)) ? 0 : Number(st.cfg.delivery_fee || 40);
+  const sub = Object.values(cart).reduce((sum, item) => sum + (Number(item.p.price) || 0) * (Number(item.qty) || 0), 0);
+  const minOrder = Number(st.minOrder || 0);
+  const discountVal = Number(st.discountVal !== undefined ? st.discountVal : (st.pct || 0));
+  let disc = 0;
+
+  if (discountVal > 0 && sub >= minOrder) {
+    if (st.discountType === 'flat') {
+      disc = Math.min(sub, discountVal);
+    } else {
+      disc = Math.round((sub * discountVal) / 100);
+    }
+  }
+
+  const freeAbove = Number(st.cfg && st.cfg.free_delivery_above !== undefined ? st.cfg.free_delivery_above : 499);
+  const fee = (!sub || (freeAbove > 0 && (sub - disc) >= freeAbove)) ? 0 : Number(st.cfg && st.cfg.delivery_fee !== undefined ? st.cfg.delivery_fee : 40);
   const total = Math.max(0, sub - disc + fee);
 
   return { sub, disc, fee, total, freeAbove };
@@ -1110,6 +1121,19 @@ function renderCart() {
   $('#sDisc').textContent = '-' + inr(t.disc);
   $('#sFee').textContent = t.fee ? inr(t.fee) : T('free');
   $('#sTotal').textContent = inr(t.total);
+
+  // Live status update for coupon code box
+  const msgEl = $('#couponMsg');
+  if (st.code && msgEl) {
+    if (st.minOrder > 0 && t.sub < st.minOrder) {
+      msgEl.style.color = '#ef4444';
+      msgEl.textContent = `Minimum order ₹${st.minOrder} required`;
+    } else if (t.disc > 0) {
+      const discountLabel = st.discountType === 'flat' ? `₹${st.discountVal}` : `${st.discountVal || st.pct}%`;
+      msgEl.style.color = 'var(--primary)';
+      msgEl.textContent = `✓ ${discountLabel} OFF applied successfully!`;
+    }
+  }
 }
 
 // Render Delivery ETA
@@ -1151,14 +1175,19 @@ async function checkPin(pinToTest) {
 
 // Open/Close Cart
 function openCart() {
-  $('#cartPanel').hidden = false;
-  $('#cartOverlay').hidden = false;
+  const panel = $('#cartPanel') || $('#cartDrawer') || document.querySelector('.panel');
+  if (panel) panel.hidden = false;
+  const overlay = $('#cartOverlay') || document.querySelector('.cart-overlay');
+  if (overlay) overlay.hidden = false;
   document.body.style.overflow = 'hidden';
+  renderCart();
 }
 
 function closeCart() {
-  $('#cartPanel').hidden = true;
-  $('#cartOverlay').hidden = true;
+  const panel = $('#cartPanel') || $('#cartDrawer') || document.querySelector('.panel');
+  if (panel) panel.hidden = true;
+  const overlay = $('#cartOverlay') || document.querySelector('.cart-overlay');
+  if (overlay) overlay.hidden = true;
   document.body.style.overflow = '';
 }
 
@@ -1309,17 +1338,45 @@ $('#applyBtn').onclick = async () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ code })
     });
-    st.pct = r.percent;
-    st.minOrder = r.min_order;
-    st.code = code.toUpperCase();
+
+    // Safely extract discount percentage/amount and minimum order requirement across all property names
+    const discountVal = Number(r.discount_percent || r.discount || r.discount_value || r.value || r.percent || 0);
+    const minOrder = Number(r.min_order || r.min_amount || r.min_order_amount || 0);
+    const discountType = (r.discount_type || r.type || (discountVal <= 100 ? 'percent' : 'flat'));
+
+    // Check if itemTotal >= minOrder
+    const itemTotal = Object.values(cart).reduce((sum, item) => sum + (Number(item.p.price) || 0) * (Number(item.qty) || 0), 0);
+
+    if (minOrder > 0 && itemTotal < minOrder) {
+      st.pct = 0;
+      st.discountVal = 0;
+      st.code = '';
+      st.minOrder = minOrder;
+      msgEl.style.color = '#ef4444';
+      msgEl.textContent = `Minimum order ₹${minOrder} required`;
+      showToast(`Minimum order ₹${minOrder} required`, 'error');
+      renderCart();
+      return;
+    }
+
+    st.pct = discountVal;
+    st.discountVal = discountVal;
+    st.discountType = discountType;
+    st.minOrder = minOrder;
+    st.code = (r.code || code).toUpperCase();
+
+    const discountLabel = discountType === 'flat' ? `₹${discountVal}` : `${discountVal}%`;
     msgEl.style.color = 'var(--primary)';
-    msgEl.textContent = `✓ ${r.percent}% ${T('off')} applied successfully!`;
-    showToast(`Coupon ${st.code} Applied (${r.percent}% OFF)`);
+    msgEl.textContent = `✓ ${discountLabel} OFF applied successfully!`;
+    showToast(`Coupon ${st.code} Applied (${discountLabel} OFF)`, 'success');
   } catch (e) {
     st.pct = 0;
+    st.discountVal = 0;
     st.code = '';
+    st.minOrder = 0;
     msgEl.style.color = '#ef4444';
-    msgEl.textContent = e.message;
+    msgEl.textContent = e.message || 'Invalid or expired coupon code';
+    showToast(e.message || 'Invalid coupon', 'error');
   }
   renderCart();
 };

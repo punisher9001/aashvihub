@@ -713,15 +713,15 @@
         </div>
 
 <!-- Variant Matrix Rows -->
-        <div class="form-group">
-          <label style="font-weight:700; font-size:13px; display:flex; justify-content:space-between;">
-            <span>📦 Size / Weight Variants &amp; Stock Matrix *</span>
-            <span style="font-size:11.5px; color:#64748b; font-weight:normal;">(Name • Custom Price • Stock Qty)</span>
+        <div class="form-group" style="background:#f8fafc; padding:14px; border-radius:10px; border:1px solid #cbd5e1;">
+          <label style="font-weight:800; font-size:13.5px; color:#0f172a; display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <span>📦 Exact Size/Weight + Color Stock Matrix *</span>
+            <span style="font-size:11.5px; color:#64748b; font-weight:normal;">(Size/Weight • Color • Custom Price • Stock)</span>
           </label>
-          <div id="variantsContainer" style="display:flex; flex-direction:column; gap:8px; margin-bottom:8px;">
+          <div id="variantsContainer" style="display:flex; flex-direction:column; gap:8px; margin-bottom:10px;">
             <!-- Rows rendered dynamically -->
           </div>
-          <button type="button" id="addVariantRowBtn" class="btn btn-secondary btn-sm" style="width:auto;">+ Add Custom Variant</button>
+          <button type="button" id="addVariantRowBtn" class="btn btn-secondary btn-sm" style="width:auto; font-weight:700;">+ Add Variant Combination</button>
         </div>
 
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
@@ -783,6 +783,6 @@
     </div>
   </div>
 
-  <script src="/js/admin.js?v=6"></script>
+  <script src="/js/admin.js?v=8"></script>
 </body>
 </html>

@@ -8,6 +8,28 @@ const SUPABASE_KEY = process.env.SUPABASE_KEY || process.env.SUPABASE_ANON_KEY |
 
 const isConfigured = () => Boolean(SUPABASE_URL && SUPABASE_KEY);
 
+const SUBCAT_CAT_MAP = {
+  1: { category_id: 1, category: 'Foods', subcategory: 'Jams' },
+  2: { category_id: 1, category: 'Foods', subcategory: 'Biscuits' },
+  3: { category_id: 1, category: 'Foods', subcategory: 'Namkeens' },
+  4: { category_id: 1, category: 'Foods', subcategory: 'Handmade Chocolates' },
+  5: { category_id: 2, category: 'Masale & Spices', subcategory: 'Chai Masala' },
+  6: { category_id: 2, category: 'Masale & Spices', subcategory: 'Chaat Masala' },
+  7: { category_id: 2, category: 'Masale & Spices', subcategory: 'Garam Masala' },
+  8: { category_id: 2, category: 'Masale & Spices', subcategory: 'Sabzi & Curry Masale' },
+  9: { category_id: 3, category: 'Clothes', subcategory: 'Men' },
+  10: { category_id: 3, category: 'Clothes', subcategory: 'Women' },
+  11: { category_id: 3, category: 'Clothes', subcategory: 'Boys' },
+  12: { category_id: 3, category: 'Clothes', subcategory: 'Girls' },
+  13: { category_id: 4, category: 'Electric Parts', subcategory: 'Cables & Chargers' },
+  14: { category_id: 4, category: 'Electric Parts', subcategory: 'Switches & Sockets' },
+  15: { category_id: 4, category: 'Electric Parts', subcategory: 'LED Lights & Bulbs' },
+  16: { category_id: 4, category: 'Electric Parts', subcategory: 'Tools & Components' },
+  17: { category_id: 5, category: 'Fresh Vegetables', subcategory: 'Daily Fresh Vegetables' },
+  18: { category_id: 5, category: 'Fresh Vegetables', subcategory: 'Leafy Greens' },
+  19: { category_id: 5, category: 'Fresh Vegetables', subcategory: 'Seasonal & Salad Veggies' }
+};
+
 async function sbFetch(path, options = {}) {
   if (!isConfigured()) {
     throw new Error('Supabase is not configured. Set SUPABASE_URL and SUPABASE_KEY in .env');
@@ -88,8 +110,8 @@ const supabaseDb = {
     let colors = Array.isArray(p.colors) ? p.colors : [];
     let sizes = Array.isArray(p.sizes) ? p.sizes : [];
     let detailsText = p.details || '';
-    let categoryId = p.category_id || null;
-    let subcategoryId = p.subcategory_id || null;
+    let categoryId = p.category_id ? Number(p.category_id) : null;
+    let subcategoryId = p.subcategory_id ? Number(p.subcategory_id) : (p.sub_category_id ? Number(p.sub_category_id) : null);
     let categoryName = p.category || '';
     let subcategoryName = p.subcategory || p.sub_category || '';
 
@@ -101,10 +123,10 @@ const supabaseDb = {
           if (Array.isArray(parsed.colors) && !colors.length) colors = parsed.colors;
           if (Array.isArray(parsed.sizes) && !sizes.length) sizes = parsed.sizes;
           if (parsed.detailsText !== undefined) detailsText = parsed.detailsText;
-          if (parsed.category_id !== undefined) categoryId = parsed.category_id;
-          if (parsed.subcategory_id !== undefined) subcategoryId = parsed.subcategory_id;
-          if (parsed.category !== undefined) categoryName = parsed.category;
-          if (parsed.subcategory !== undefined) subcategoryName = parsed.subcategory;
+          if (parsed.category_id !== undefined && !categoryId) categoryId = Number(parsed.category_id);
+          if (parsed.subcategory_id !== undefined && !subcategoryId) subcategoryId = Number(parsed.subcategory_id);
+          if (parsed.category !== undefined && !categoryName) categoryName = parsed.category;
+          if (parsed.subcategory !== undefined && !subcategoryName) subcategoryName = parsed.subcategory;
         }
       } catch (e) {
         // Fallback to raw string
@@ -113,30 +135,58 @@ const supabaseDb = {
       variants = p.variants;
     }
 
+    // Auto-map category from subcategory if missing
+    if (subcategoryId && SUBCAT_CAT_MAP[subcategoryId]) {
+      const mapInfo = SUBCAT_CAT_MAP[subcategoryId];
+      if (!categoryId) categoryId = mapInfo.category_id;
+      if (!categoryName) categoryName = mapInfo.category;
+      if (!subcategoryName) subcategoryName = mapInfo.subcategory;
+    }
+
     // Default variant if none explicitly defined
     if (!variants || variants.length === 0) {
       variants = [{
+        size: p.unit || 'Standard',
+        color: (colors && colors[0]) || 'Default',
         name: p.unit || 'Standard',
-        stock: Math.max(0, Number(p.stock || 0))
+        stock: Math.max(0, Number(p.stock || 0)),
+        price: Number(p.price || 0)
       }];
     }
 
-    // Ensure valid stock integers
-    variants = variants.map(v => ({
-      name: String(v.name || 'Standard').trim(),
-      price: v.price !== undefined && !isNaN(Number(v.price)) && Number(v.price) > 0 ? Number(v.price) : Number(p.price || 0),
-      stock: Math.max(0, parseInt(v.stock, 10) || 0)
-    }));
+    // Ensure valid variants with size, color, stock, and price
+    variants = variants.map(v => {
+      let vName = String(v.name || v.size || 'Standard').trim();
+      let vSize = String(v.size || (vName.includes(' - ') ? vName.split(' - ')[0] : vName) || 'Standard').trim();
+      let vColor = String(v.color || (vName.includes(' - ') ? vName.split(' - ')[1] : 'Default')).trim() || 'Default';
+      let vStock = Math.max(0, parseInt(v.stock, 10) || 0);
+      let vPrice = v.price !== undefined && !isNaN(Number(v.price)) && Number(v.price) > 0 ? Number(v.price) : Number(p.price || 0);
+      return {
+        size: vSize,
+        color: vColor,
+        name: vSize + (vColor.toLowerCase() !== 'default' ? ` - ${vColor}` : ''),
+        stock: vStock,
+        price: vPrice
+      };
+    });
+
+    // Populate distinct sizes and colors
+    if (!sizes.length) {
+      sizes = [...new Set(variants.map(v => v.size).filter(Boolean))];
+    }
+    if (!colors.length) {
+      colors = [...new Set(variants.map(v => v.color).filter(c => c && c.toLowerCase() !== 'default'))];
+    }
 
     const totalStock = variants.reduce((sum, v) => sum + v.stock, 0);
 
     return {
       ...p,
       details: detailsText,
-      category_id: categoryId || p.category_id,
-      subcategory_id: subcategoryId || p.subcategory_id,
-      category: categoryName || p.category,
-      subcategory: subcategoryName || p.subcategory,
+      category_id: categoryId,
+      subcategory_id: subcategoryId,
+      category: categoryName,
+      subcategory: subcategoryName,
       colors,
       sizes,
       variants,
@@ -149,14 +199,21 @@ const supabaseDb = {
 
   // Helper: Encode Variant Matrix & Category safely into existing details text field (zero SQL migration needed)
   encodeProductDetails(detailsText, variants, categoryId, colors, subcategoryId, categoryName, subcategoryName, sizes) {
-    const cleanVariants = Array.isArray(variants) ? variants.map(v => ({
-      name: String(v.name || 'Standard').trim(),
-      price: v.price !== undefined && !isNaN(Number(v.price)) && Number(v.price) > 0 ? Number(v.price) : undefined,
-      stock: Math.max(0, parseInt(v.stock, 10) || 0)
-    })).filter(v => v.name) : [];
+    const cleanVariants = Array.isArray(variants) ? variants.map(v => {
+      let vName = String(v.name || v.size || 'Standard').trim();
+      let vSize = String(v.size || (vName.includes(' - ') ? vName.split(' - ')[0] : vName) || 'Standard').trim();
+      let vColor = String(v.color || (vName.includes(' - ') ? vName.split(' - ')[1] : 'Default')).trim() || 'Default';
+      return {
+        size: vSize,
+        color: vColor,
+        name: vSize + (vColor.toLowerCase() !== 'default' ? ` - ${vColor}` : ''),
+        price: v.price !== undefined && !isNaN(Number(v.price)) && Number(v.price) > 0 ? Number(v.price) : undefined,
+        stock: Math.max(0, parseInt(v.stock, 10) || 0)
+      };
+    }).filter(v => v.size || v.name) : [];
 
     const cleanColors = Array.isArray(colors) ? colors.map(c => String(c).trim()).filter(Boolean) : [];
-    const cleanSizes = Array.isArray(sizes) ? sizes.map(s => String(s).trim()).filter(Boolean) : cleanVariants.map(v => v.name);
+    const cleanSizes = Array.isArray(sizes) ? sizes.map(s => String(s).trim()).filter(Boolean) : [...new Set(cleanVariants.map(v => v.size))];
 
     return JSON.stringify({
       detailsText: String(detailsText || '').trim(),
@@ -208,7 +265,8 @@ const supabaseDb = {
         list = list.filter(p =>
           (p.name && p.name.toLowerCase().includes(term)) ||
           (p.description && p.description.toLowerCase().includes(term)) ||
-          (p.unit && p.unit.toLowerCase().includes(term))
+          (p.unit && p.unit.toLowerCase().includes(term)) ||
+          (p.subcategory && p.subcategory.toLowerCase().includes(term))
         );
       }
 
@@ -224,26 +282,48 @@ const supabaseDb = {
     return rows && rows[0] ? this.parseProductVariants(rows[0]) : null;
   },
 
-  // Product CRUD in Supabase with Variant Support
-  async createProduct(prod) {
+  // Product CRUD in Supabase with Variant Support (Only sending valid table columns)
+  async addProduct(prod) {
     const cleanVariants = Array.isArray(prod.variants) && prod.variants.length > 0
-      ? prod.variants.map(v => ({ name: String(v.name || 'Standard').trim(), stock: Math.max(0, parseInt(v.stock, 10) || 0) }))
-      : [{ name: prod.unit || 'Standard', stock: Math.max(0, parseInt(prod.stock, 10) || 50) }];
+      ? prod.variants.map(v => {
+          let vName = String(v.name || v.size || 'Standard').trim();
+          let vSize = String(v.size || (vName.includes(' - ') ? vName.split(' - ')[0] : vName) || 'Standard').trim();
+          let vColor = String(v.color || (vName.includes(' - ') ? vName.split(' - ')[1] : 'Default')).trim() || 'Default';
+          return {
+            size: vSize,
+            color: vColor,
+            name: vSize + (vColor.toLowerCase() !== 'default' ? ` - ${vColor}` : ''),
+            price: v.price !== undefined ? Number(v.price) : undefined,
+            stock: Math.max(0, parseInt(v.stock, 10) || 0)
+          };
+        })
+      : [{
+          size: prod.unit || 'Standard',
+          color: (prod.colors && prod.colors[0]) || 'Default',
+          name: prod.unit || 'Standard',
+          stock: Math.max(0, parseInt(prod.stock, 10) || 50)
+        }];
 
     const totalStock = cleanVariants.reduce((s, v) => s + v.stock, 0);
+    const subId = Number(prod.subcategory_id) || (prod.category_id === 3 ? 10 : 1);
+    const catId = Number(prod.category_id) || (SUBCAT_CAT_MAP[subId] ? SUBCAT_CAT_MAP[subId].category_id : null);
+    const catName = prod.category || (SUBCAT_CAT_MAP[subId] ? SUBCAT_CAT_MAP[subId].category : '');
+    const subName = prod.subcategory || (SUBCAT_CAT_MAP[subId] ? SUBCAT_CAT_MAP[subId].subcategory : '');
+
     const encodedDetails = this.encodeProductDetails(
       prod.details || prod.description,
       cleanVariants,
-      prod.category_id,
+      catId,
       prod.colors,
-      prod.subcategory_id,
-      prod.category,
-      prod.subcategory,
+      subId,
+      catName,
+      subName,
       prod.sizes
     );
 
+    // Only send valid table columns that exist in public.products
     const body = {
-      subcategory_id: Number(prod.subcategory_id) || 1,
+      subcategory_id: subId,
       name: String(prod.name).trim(),
       description: String(prod.description || '').trim(),
       details: encodedDetails,
@@ -263,16 +343,27 @@ const supabaseDb = {
     return this.parseProductVariants(res || body);
   },
 
+  async createProduct(prod) {
+    return this.addProduct(prod);
+  },
+
   async updateProduct(id, prod) {
     let encodedDetails = undefined;
     let totalStock = prod.stock !== undefined ? Number(prod.stock) : undefined;
 
     if (Array.isArray(prod.variants) || prod.colors !== undefined || prod.category_id !== undefined) {
-      const cleanVariants = Array.isArray(prod.variants) ? prod.variants.map(v => ({
-        name: String(v.name || 'Standard').trim(),
-        price: v.price !== undefined ? Number(v.price) : undefined,
-        stock: Math.max(0, parseInt(v.stock, 10) || 0)
-      })) : [];
+      const cleanVariants = Array.isArray(prod.variants) ? prod.variants.map(v => {
+        let vName = String(v.name || v.size || 'Standard').trim();
+        let vSize = String(v.size || (vName.includes(' - ') ? vName.split(' - ')[0] : vName) || 'Standard').trim();
+        let vColor = String(v.color || (vName.includes(' - ') ? vName.split(' - ')[1] : 'Default')).trim() || 'Default';
+        return {
+          size: vSize,
+          color: vColor,
+          name: vSize + (vColor.toLowerCase() !== 'default' ? ` - ${vColor}` : ''),
+          price: v.price !== undefined ? Number(v.price) : undefined,
+          stock: Math.max(0, parseInt(v.stock, 10) || 0)
+        };
+      }) : [];
       totalStock = cleanVariants.length ? cleanVariants.reduce((s, v) => s + v.stock, 0) : (prod.stock !== undefined ? Number(prod.stock) : 50);
       encodedDetails = this.encodeProductDetails(
         prod.details || prod.description,
@@ -286,6 +377,7 @@ const supabaseDb = {
       );
     }
 
+    // Only send valid table columns
     const body = {};
     if (prod.name) body.name = String(prod.name).trim();
     if (prod.subcategory_id) body.subcategory_id = Number(prod.subcategory_id);
@@ -316,7 +408,7 @@ const supabaseDb = {
   },
 
   // Auto-Deduct Specific Variant Stock When Order is Placed
-  async deductProductStock(productId, qty, variantName) {
+  async deductProductStock(productId, qty, variantName, colorName, sizeName) {
     try {
       const rawRows = await sbFetch(`/products?id=eq.${encodeURIComponent(productId)}&select=*&limit=1`);
       if (!rawRows || !rawRows[0]) return false;
@@ -324,9 +416,26 @@ const supabaseDb = {
       const prod = this.parseProductVariants(rawRows[0]);
       const quantityToDeduct = Math.max(1, parseInt(qty, 10) || 1);
       const targetVar = String(variantName || '').trim().toLowerCase();
+      const targetColor = String(colorName || '').trim().toLowerCase();
+      const targetSize = String(sizeName || '').trim().toLowerCase();
 
-      // Find matching variant or first with stock
-      let matched = prod.variants.find(v => v.name.toLowerCase() === targetVar);
+      // Find matching variant by exact size + color, or variant name, or first in stock
+      let matched = prod.variants.find(v => {
+        const vSize = String(v.size || (v.name ? v.name.split(' - ')[0] : '')).trim().toLowerCase();
+        const vColor = String(v.color || (v.name && v.name.includes(' - ') ? v.name.split(' - ')[1] : 'default')).trim().toLowerCase();
+        
+        if (targetSize && targetColor && targetColor !== 'default') {
+          return (vSize === targetSize || v.name.toLowerCase() === targetSize) && (vColor === targetColor || v.color.toLowerCase() === targetColor);
+        }
+        if (targetSize) {
+          return vSize === targetSize || v.name.toLowerCase() === targetSize;
+        }
+        if (targetColor && targetColor !== 'default') {
+          return vColor === targetColor || (v.name.toLowerCase().includes(targetColor));
+        }
+        return v.name.toLowerCase() === targetVar || vSize === targetVar;
+      });
+
       if (!matched && prod.variants.length > 0) {
         matched = prod.variants.find(v => v.stock > 0) || prod.variants[0];
       }
@@ -336,7 +445,16 @@ const supabaseDb = {
       }
 
       const newTotalStock = prod.variants.reduce((s, v) => s + v.stock, 0);
-      const newDetails = this.encodeProductDetails(prod.details, prod.variants, prod.category_id);
+      const newDetails = this.encodeProductDetails(
+        prod.details,
+        prod.variants,
+        prod.category_id,
+        prod.colors,
+        prod.subcategory_id,
+        prod.category,
+        prod.subcategory,
+        prod.sizes
+      );
 
       await sbFetch(`/products?id=eq.${encodeURIComponent(productId)}`, {
         method: 'PATCH',

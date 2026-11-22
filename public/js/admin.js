@@ -189,7 +189,6 @@ function setupPresetButtons() {
 
 // ============================================================
 // Aashvi Hub - Admin Dashboard Controller
-// Founder & Director: Dr Mukul Kumar (Mob: 8988227729)
 // ============================================================
 
 const $ = sel => document.querySelector(sel);

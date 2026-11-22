@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const mysql = require('mysql2/promise');
 const bcrypt = require('bcryptjs');
+
 const STORE_PATH = path.join(__dirname, 'local_store.json');
 
 const INITIAL_DATA = {
@@ -519,18 +520,90 @@ class LocalDatabase {
     return list.map(p => {
       let variants = p.variants;
       if (!variants || !variants.length) {
-        variants = [{ name: p.unit || 'Standard', stock: Number(p.stock || 0), price: Number(p.price || 0) }];
+        variants = [{
+          size: p.unit || 'Standard',
+          color: (p.colors && p.colors[0]) || 'Default',
+          name: p.unit || 'Standard',
+          stock: Number(p.stock || 0),
+          price: Number(p.price || 0)
+        }];
+      } else {
+        variants = variants.map(v => {
+          let vName = String(v.name || v.size || 'Standard').trim();
+          let vSize = String(v.size || (vName.includes(' - ') ? vName.split(' - ')[0] : vName) || 'Standard').trim();
+          let vColor = String(v.color || (vName.includes(' - ') ? vName.split(' - ')[1] : 'Default')).trim() || 'Default';
+          return {
+            size: vSize,
+            color: vColor,
+            name: vSize + (vColor.toLowerCase() !== 'default' ? ` - ${vColor}` : ''),
+            stock: Math.max(0, parseInt(v.stock, 10) || 0),
+            price: v.price !== undefined && !isNaN(Number(v.price)) && Number(v.price) > 0 ? Number(v.price) : Number(p.price || 0)
+          };
+        });
       }
       const totalStock = variants.reduce((s, v) => s + (Number(v.stock) || 0), 0);
+      const sizes = p.sizes && p.sizes.length ? p.sizes : [...new Set(variants.map(v => v.size).filter(Boolean))];
+      const colors = p.colors && p.colors.length ? p.colors : [...new Set(variants.map(v => v.color).filter(c => c && c.toLowerCase() !== 'default'))];
       return {
         ...p,
         variants,
+        sizes,
+        colors,
         stock: totalStock,
         available: Boolean(p.is_available && totalStock > 0),
         mrp: Number(p.mrp || p.price || 0),
         price: Number(p.price || 0)
       };
     });
+  }
+
+  deductProductStock(productId, qty, variantName, colorName, sizeName) {
+    const p = this.data.products.find(x => x.id === Number(productId));
+    if (!p) return false;
+
+    if (!Array.isArray(p.variants) || !p.variants.length) {
+      p.variants = [{
+        size: p.unit || 'Standard',
+        color: (p.colors && p.colors[0]) || 'Default',
+        name: p.unit || 'Standard',
+        stock: Math.max(0, Number(p.stock || 0)),
+        price: Number(p.price || 0)
+      }];
+    }
+
+    const quantityToDeduct = Math.max(1, parseInt(qty, 10) || 1);
+    const targetVar = String(variantName || '').trim().toLowerCase();
+    const targetColor = String(colorName || '').trim().toLowerCase();
+    const targetSize = String(sizeName || '').trim().toLowerCase();
+
+    let matched = p.variants.find(v => {
+      const vSize = String(v.size || (v.name ? v.name.split(' - ')[0] : '')).trim().toLowerCase();
+      const vColor = String(v.color || (v.name && v.name.includes(' - ') ? v.name.split(' - ')[1] : 'default')).trim().toLowerCase();
+      
+      if (targetSize && targetColor && targetColor !== 'default') {
+        return (vSize === targetSize || v.name.toLowerCase() === targetSize) && (vColor === targetColor || v.color.toLowerCase() === targetColor);
+      }
+      if (targetSize) {
+        return vSize === targetSize || v.name.toLowerCase() === targetSize;
+      }
+      if (targetColor && targetColor !== 'default') {
+        return vColor === targetColor || (v.name.toLowerCase().includes(targetColor));
+      }
+      return v.name.toLowerCase() === targetVar || vSize === targetVar;
+    });
+
+    if (!matched && p.variants.length > 0) {
+      matched = p.variants.find(v => v.stock > 0) || p.variants[0];
+    }
+
+    if (matched) {
+      matched.stock = Math.max(0, matched.stock - quantityToDeduct);
+    }
+
+    p.stock = p.variants.reduce((s, v) => s + (Number(v.stock) || 0), 0);
+    p.is_available = p.stock > 0 ? 1 : 0;
+    this.save();
+    return true;
   }
 
   async getProductById(id) {

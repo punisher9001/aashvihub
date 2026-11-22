@@ -109,7 +109,7 @@ CREATE TABLE IF NOT EXISTS public.order_items (
   qty INT NOT NULL
 );
 
--- Enable Row Level Security (RLS) & Allow public access
+-- Enable Row Level Security (RLS) & Allow public / admin full access
 ALTER TABLE public.settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.delivery_zones ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.themes ENABLE ROW LEVEL SECURITY;
@@ -121,16 +121,45 @@ ALTER TABLE public.admins ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.order_items ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Public Read Settings" ON public.settings FOR SELECT USING (true);
-CREATE POLICY "Public Read Zones" ON public.delivery_zones FOR SELECT USING (true);
-CREATE POLICY "Public Read Themes" ON public.themes FOR SELECT USING (true);
-CREATE POLICY "Public Read Categories" ON public.categories FOR SELECT USING (true);
-CREATE POLICY "Public Read Subcategories" ON public.subcategories FOR SELECT USING (true);
-CREATE POLICY "Public Read Products" ON public.products FOR SELECT USING (true);
-CREATE POLICY "Public Read Offers" ON public.offers FOR SELECT USING (true);
-CREATE POLICY "Public Insert Orders" ON public.orders FOR ALL USING (true);
-CREATE POLICY "Public Insert Order Items" ON public.order_items FOR ALL USING (true);
-CREATE POLICY "Public Admin Full" ON public.admins FOR ALL USING (true);
+-- If tables already exist in Supabase, run these to grant full CRUD permissions:
+DROP POLICY IF EXISTS "Public Read Settings" ON public.settings;
+DROP POLICY IF EXISTS "Public Full Settings" ON public.settings;
+CREATE POLICY "Public Full Settings" ON public.settings FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Public Read Zones" ON public.delivery_zones;
+DROP POLICY IF EXISTS "Public Full Zones" ON public.delivery_zones;
+CREATE POLICY "Public Full Zones" ON public.delivery_zones FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Public Read Themes" ON public.themes;
+DROP POLICY IF EXISTS "Public Full Themes" ON public.themes;
+CREATE POLICY "Public Full Themes" ON public.themes FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Public Read Categories" ON public.categories;
+DROP POLICY IF EXISTS "Public Full Categories" ON public.categories;
+CREATE POLICY "Public Full Categories" ON public.categories FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Public Read Subcategories" ON public.subcategories;
+DROP POLICY IF EXISTS "Public Full Subcategories" ON public.subcategories;
+CREATE POLICY "Public Full Subcategories" ON public.subcategories FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Public Read Products" ON public.products;
+DROP POLICY IF EXISTS "Public Full Products" ON public.products;
+CREATE POLICY "Public Full Products" ON public.products FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Public Read Offers" ON public.offers;
+DROP POLICY IF EXISTS "Public Full Offers" ON public.offers;
+CREATE POLICY "Public Full Offers" ON public.offers FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Public Insert Orders" ON public.orders;
+DROP POLICY IF EXISTS "Public Full Orders" ON public.orders;
+CREATE POLICY "Public Full Orders" ON public.orders FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Public Insert Order Items" ON public.order_items;
+DROP POLICY IF EXISTS "Public Full Order Items" ON public.order_items;
+CREATE POLICY "Public Full Order Items" ON public.order_items FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Public Admin Full" ON public.admins;
+CREATE POLICY "Public Admin Full" ON public.admins FOR ALL USING (true) WITH CHECK (true);
 
 -- 2. Populate Default Settings
 INSERT INTO public.settings (k, v) VALUES

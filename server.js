@@ -134,16 +134,11 @@ app.get('/api/config', wrap(async (req, res) => {
   const s = await getSettings();
   res.json({
     shop: s.shop_name || 'Aashvi Hub',
-    owner_name: s.owner_name || 'Dr Mukul Kumar',
-    owner_phone: s.owner_phone || '8988227729',
-    owner_whatsapp: s.owner_whatsapp || '918988227729',
-    owner_title: s.owner_title || 'Director',
     support_email: s.support_email || 'support@aashvihub.com',
     origin_pincode: s.origin_pincode || '110001',
     delivery_fee: Number(s.delivery_fee || 40),
     free_delivery_above: Number(s.free_delivery_above || 499),
-    online_payment: !!(RZP_KEY && RZP_SECRET),
-    razorpay_key: RZP_KEY,
+    online_payment: false,
     database_mode: supabaseDb.isConfigured() ? 'supabase' : 'local'
   });
 }));

@@ -637,54 +637,17 @@ function renderProductGrid(visibleList, grid, empty, countBadge) {
     // Current selected variant or default first available
     const variants = Array.isArray(p.variants) && p.variants.length > 0
       ? p.variants
-      : [{ name: p.unit || 'Standard', stock: Number(p.stock || 0), price: Number(p.price || 0) }];
+      : [{ name: p.unit || 'Standard', size: p.unit || 'Standard', color: 'Default', stock: Number(p.stock || 0), price: Number(p.price || 0) }];
 
     const activeVar = selectedVariants[p.id] || variants.find(v => v.stock > 0) || variants[0];
     const currentPrice = (activeVar && activeVar.price) ? activeVar.price : p.price;
-    const isVarOOS = !activeVar || activeVar.stock <= 0;
+    const isProductOOS = Number(p.stock || 0) <= 0 || !p.available;
     const off = p.mrp > currentPrice ? Math.round((1 - currentPrice / p.mrp) * 100) : 0;
     const cartItem = cart[p.id];
     const n = cartItem ? cartItem.qty : 0;
     const isWished = wishlist.some(w => w.id === p.id);
 
-    // Color Swatches HTML
-    const colors = Array.isArray(p.colors) && p.colors.length > 0 ? p.colors : [];
-    const activeColor = selectedColors[p.id] || colors[0] || '';
-    const colorsHtml = colors.length > 0 ? `
-      <div class="color-swatch-box" onclick="event.stopPropagation()">
-        <span class="color-swatch-label">Color:</span>
-        ${colors.map(c => {
-          const isSelected = activeColor === c;
-          return `
-            <span class="color-swatch-pill ${isSelected ? 'selected' : ''}" 
-                  onclick="selectProductColor(${p.id}, '${esc(c)}', event)"
-                  title="${esc(c)}">
-              <span class="color-swatch-dot" style="background:${getColorHexCode(c)};"></span>
-              ${esc(c)}
-            </span>
-          `;
-        }).join('')}
-      </div>
-    ` : '';
-
-    // Variant pills HTML (Clothes sizes / Food weights)
-    const pillsHtml = variants.length > 1 ? `
-      <div class="variant-pill-box" onclick="event.stopPropagation()">
-        ${variants.map(v => {
-          const isSelected = activeVar && activeVar.name === v.name;
-          const isOOS = v.stock <= 0;
-          return `
-            <span class="variant-pill ${isSelected ? 'selected' : ''} ${isOOS ? 'out-of-stock' : ''}"
-                  title="${isOOS ? 'Out of Stock' : (v.price ? inr(v.price) : '')}"
-                  onclick="selectProductVariant(${p.id}, '${esc(v.name)}', event)">
-              ${esc(v.name)}${isOOS ? ' (Out)' : ''}
-            </span>
-          `;
-        }).join('')}
-      </div>
-    ` : '';
-
-    const ctl = (!p.available || isVarOOS)
+    const ctl = isProductOOS
       ? `<button class="btn-unavailable" disabled style="width:100%; padding:8px 12px; border-radius:8px; font-weight:700;">Out of Stock</button>`
       : n
         ? `<div class="qty-control" onclick="event.stopPropagation()">
@@ -692,10 +655,10 @@ function renderProductGrid(visibleList, grid, empty, countBadge) {
              <b>${n}</b>
              <button data-a="${p.id}" aria-label="Increase quantity">+</button>
            </div>`
-        : `<button class="btn-add" data-a="${p.id}" style="width:100%;">+ ${esc(T('add'))}</button>`;
+        : `<button class="btn-add" data-a="${p.id}" style="width:100%; font-weight:700;">+ ${esc(T('add'))}</button>`;
 
     return `
-      <div class="card ${p.available && !isVarOOS ? '' : 'na'}" 
+      <div class="card ${isProductOOS ? 'na' : ''}" 
            style="position:relative; cursor:pointer;" 
            onclick="openProductModal(${p.id})"
            title="Click to view ${esc(p.name)}">
@@ -711,10 +674,8 @@ function renderProductGrid(visibleList, grid, empty, countBadge) {
         </div>
 
         <div class="card-meta">
-          <div class="un">${esc((activeVar ? activeVar.name : p.unit) || 'Standard Unit')}</div>
+          <div class="un">${esc(p.unit || (activeVar ? activeVar.name : 'Standard Unit'))}</div>
           <div class="nm">${esc(p.name)}</div>
-          ${colorsHtml}
-          ${pillsHtml}
           <div class="rating-line">
             <span>★★★★★</span>
             <span class="rating-count">(4.9)</span>
@@ -864,6 +825,75 @@ function openDetail(id) {
 }
 
 
+function findMatchingVariant(p, size, color) {
+  if (!p) return null;
+  const variants = Array.isArray(p.variants) && p.variants.length > 0
+    ? p.variants
+    : [{ name: p.unit || 'Standard', size: p.unit || 'Standard', color: 'Default', stock: Number(p.stock || 0), price: Number(p.price || 0) }];
+
+  const targetSize = String(size || '').trim().toLowerCase();
+  const targetColor = String(color || 'Default').trim().toLowerCase();
+
+  // 1. Exact match on size AND color
+  let match = variants.find(v => {
+    const vSize = String(v.size || (v.name && v.name.includes(' - ') ? v.name.split(' - ')[0] : v.name) || '').trim().toLowerCase();
+    const vColor = String(v.color || (v.name && v.name.includes(' - ') ? v.name.split(' - ')[1] : 'Default')).trim().toLowerCase();
+    const sizeMatches = vSize === targetSize || String(v.name || '').trim().toLowerCase() === targetSize;
+    const colorMatches = vColor === targetColor || (targetColor === 'default' && (!v.color || v.color.toLowerCase() === 'default'));
+    return sizeMatches && colorMatches;
+  });
+
+  if (match) return match;
+
+  // 2. Composite name match
+  const comp = `${targetSize} - ${targetColor}`.toLowerCase();
+  match = variants.find(v => String(v.name || '').trim().toLowerCase() === comp);
+  if (match) return match;
+
+  // 3. Fallback: If targetColor is 'default' and no color variant specified, match by size alone
+  if (!targetColor || targetColor === 'default') {
+    match = variants.find(v => {
+      const vSize = String(v.size || (v.name && v.name.includes(' - ') ? v.name.split(' - ')[0] : v.name) || '').trim().toLowerCase();
+      return vSize === targetSize || String(v.name || '').trim().toLowerCase() === targetSize;
+    });
+    if (match) return match;
+  }
+
+  return null;
+}
+
+window.updateCartItemSize = function(id, newSize) {
+  if (!cart[id]) return;
+  cart[id].size = newSize;
+  const p = cart[id].p;
+  const v = findMatchingVariant(p, newSize, cart[id].color);
+  if (v && v.price) cart[id].p.price = v.price;
+  cart[id].variant = v ? v.name : (newSize + (cart[id].color && cart[id].color !== 'Default' ? ' - ' + cart[id].color : ''));
+  localStorage.cart = JSON.stringify(cart);
+  renderCart();
+  renderProducts();
+};
+
+window.updateCartItemColor = function(id, newColor) {
+  if (!cart[id]) return;
+  cart[id].color = newColor;
+  const p = cart[id].p;
+  const v = findMatchingVariant(p, cart[id].size, newColor);
+  if (v && v.price) cart[id].p.price = v.price;
+  cart[id].variant = v ? v.name : (cart[id].size + (newColor && newColor !== 'Default' ? ' - ' + newColor : ''));
+  localStorage.cart = JSON.stringify(cart);
+  renderCart();
+  renderProducts();
+};
+
+window.removeCartItem = function(id) {
+  delete cart[id];
+  localStorage.cart = JSON.stringify(cart);
+  renderCart();
+  renderProducts();
+  showToast('Item removed from cart', 'info');
+};
+
 function changeQuantity(id, delta) {
   const p = st.products.find(x => x.id === id) || 
             st.categoryProducts.find(x => x.id === id) || 
@@ -871,31 +901,30 @@ function changeQuantity(id, delta) {
             (cart[id] && cart[id].p);
   if (!p) return;
 
-  const variants = Array.isArray(p.variants) && p.variants.length > 0
-    ? p.variants
-    : [{ name: p.unit || 'Standard', stock: Number(p.stock || 0), price: Number(p.price || 0) }];
-
-  const activeVar = selectedVariants[id] || (cart[id] && cart[id].variant ? variants.find(v => v.name === cart[id].variant) : null) || variants.find(v => v.stock > 0) || variants[0];
-  const maxStock = activeVar ? activeVar.stock : Number(p.stock || 0);
-
   const current = cart[id] ? cart[id].qty : 0;
   const next = current + delta;
-
-  if (next > maxStock) {
-    showToast(`Only ${maxStock} items available for ${activeVar ? activeVar.name : 'this item'}`, 'error');
-    return;
-  }
 
   if (next <= 0) {
     delete cart[id];
   } else {
-    const itemPrice = (activeVar && activeVar.price) ? activeVar.price : p.price;
-    const chosenColor = selectedColors[id] || (Array.isArray(p.colors) && p.colors.length ? p.colors[0] : '');
+    // Current item size and color
+    const curSize = (cart[id] && cart[id].size) || (p.variants && p.variants[0] && p.variants[0].size) || p.unit || 'Standard';
+    const curColor = (cart[id] && cart[id].color) || (p.variants && p.variants[0] && p.variants[0].color) || (p.colors && p.colors[0]) || 'Default';
+    const matchedV = findMatchingVariant(p, curSize, curColor);
+    const maxStock = matchedV ? matchedV.stock : Number(p.stock || 0);
+
+    if (next > maxStock) {
+      showToast(`Only ${maxStock} items available for ${curSize} (${curColor})`, 'error');
+      return;
+    }
+
+    const itemPrice = (matchedV && matchedV.price) ? matchedV.price : p.price;
     cart[id] = { 
       p: { ...p, price: itemPrice }, 
       qty: next, 
-      variant: activeVar ? activeVar.name : (p.unit || 'Standard'),
-      color: chosenColor
+      size: curSize,
+      color: curColor,
+      variant: matchedV ? matchedV.name : (curSize + (curColor && curColor !== 'Default' ? ' - ' + curColor : ''))
     };
   }
 
@@ -946,23 +975,102 @@ function renderCart() {
     }
   }
 
+  let hasOutOfStockCombinations = false;
+
   // Items List
   const listEl = $('#cartItems');
   if (items.length) {
-    listEl.innerHTML = items.map(([id, c]) => `
-      <div class="cart-line">
-        ${c.p.image ? `<img src="${esc(c.p.image)}" class="cart-line-img" alt="">` : ''}
-        <div class="cart-line-info">
-          <div class="cart-line-name">${esc(c.p.name)}</div>
-          <div class="cart-line-price">${inr(c.p.price)} <small style="color:var(--text-muted)">(${esc(c.p.unit || '')})</small></div>
+    listEl.innerHTML = items.map(([id, c]) => {
+      const p = c.p;
+      const variants = Array.isArray(p.variants) && p.variants.length > 0 ? p.variants : [];
+      
+      // Sizes list
+      const sizesList = (p.sizes && p.sizes.length) ? p.sizes : (variants.length ? [...new Set(variants.map(v => v.size || (v.name && v.name.includes(' - ') ? v.name.split(' - ')[0] : v.name)).filter(Boolean))] : [p.unit || 'Standard']);
+      const curSize = c.size || (variants[0] && (variants[0].size || variants[0].name)) || p.unit || 'Standard';
+      c.size = curSize;
+
+      // Colors list
+      const colorsList = (p.colors && p.colors.length) ? p.colors : (variants.length ? [...new Set(variants.map(v => v.color).filter(co => co && co.toLowerCase() !== 'default'))] : []);
+      const curColor = c.color || (variants[0] && variants[0].color) || (colorsList[0] || 'Default');
+      c.color = curColor;
+
+      // Combination match & stock verification
+      const matchedVariant = findMatchingVariant(p, curSize, curColor);
+      const isOOS = !matchedVariant || matchedVariant.stock <= 0 || c.qty > matchedVariant.stock;
+      if (isOOS) hasOutOfStockCombinations = true;
+
+      const itemPrice = (matchedVariant && matchedVariant.price) ? matchedVariant.price : p.price;
+
+      const sizeOptionsHtml = sizesList.map(s => `
+        <option value="${esc(s)}" ${s === curSize ? 'selected' : ''}>${esc(s)}</option>
+      `).join('');
+
+      const colorOptionsHtml = colorsList.length > 0 ? colorsList.map(co => `
+        <option value="${esc(co)}" ${co === curColor ? 'selected' : ''}>${esc(co)}</option>
+      `).join('') : `<option value="Default" selected>Default</option>`;
+
+      const statusBadge = (!matchedVariant || matchedVariant.stock <= 0)
+        ? `<span style="color:#dc2626; font-size:11.5px; font-weight:800;">✕ Out of Stock</span>`
+        : (c.qty > matchedVariant.stock)
+          ? `<span style="color:#b45309; font-size:11.5px; font-weight:700;">Only ${matchedVariant.stock} in Stock</span>`
+          : `<span style="color:#15803d; font-size:11.5px; font-weight:700;">✓ In Stock (${matchedVariant.stock})</span>`;
+
+      return `
+        <div class="cart-line" data-id="${id}" style="display:flex; flex-direction:column; align-items:stretch; gap:8px; padding:12px; border-bottom:1px solid #e2e8f0;">
+          <div style="display:flex; align-items:center; gap:12px;">
+            ${p.image ? `<img src="${esc(p.image)}" class="cart-line-img" alt="" style="width:52px; height:52px; border-radius:8px; object-fit:cover;">` : ''}
+            <div class="cart-line-info" style="flex:1;">
+              <div class="cart-line-name" style="font-weight:700; font-size:14px; color:#0f172a;">${esc(p.name)}</div>
+              <div class="cart-line-price" style="font-weight:800; color:var(--primary); font-size:14px; margin-top:2px;">
+                ${inr(itemPrice)} <small style="color:var(--text-muted); font-size:12px; font-weight:normal;">(${esc(curSize)})</small>
+              </div>
+            </div>
+            <!-- Quantity Control + Easy Remove (🗑️) Button -->
+            <div style="display:flex; align-items:center; gap:6px;">
+              <div class="qty-control">
+                <button data-m="${id}" aria-label="Decrease quantity">−</button>
+                <b>${c.qty}</b>
+                <button data-a="${id}" aria-label="Increase quantity">+</button>
+              </div>
+              <button class="btn-cart-remove" data-r="${id}" title="Remove item" aria-label="Remove item" style="background:#fee2e2; border:none; color:#ef4444; border-radius:8px; padding:6px 10px; cursor:pointer; font-size:15px; display:inline-flex; align-items:center; justify-content:center; font-weight:700;">
+                🗑️
+              </button>
+            </div>
+          </div>
+
+          <!-- Size/Pack & Color Combination Matrix Selectors -->
+          <div style="display:flex; flex-wrap:wrap; gap:10px; background:#f8fafc; padding:8px 10px; border-radius:8px; border:1px solid #e2e8f0; align-items:center;">
+            <div style="display:flex; align-items:center; gap:6px;">
+              <label style="font-size:11.5px; font-weight:700; color:#475569;">Size/Pack:</label>
+              <select class="cart-size-select" style="padding:4px 8px; border-radius:6px; border:1px solid #cbd5e1; font-size:12px; font-weight:600; background:white; color:#0f172a;" onchange="updateCartItemSize(${id}, this.value)">
+                ${sizeOptionsHtml}
+              </select>
+            </div>
+
+            ${colorsList.length > 0 ? `
+              <div style="display:flex; align-items:center; gap:6px;">
+                <label style="font-size:11.5px; font-weight:700; color:#475569;">Color:</label>
+                <select class="cart-color-select" style="padding:4px 8px; border-radius:6px; border:1px solid #cbd5e1; font-size:12px; font-weight:600; background:white; color:#0f172a;" onchange="updateCartItemColor(${id}, this.value)">
+                  ${colorOptionsHtml}
+                </select>
+              </div>
+            ` : ''}
+
+            <div style="margin-left:auto;">
+              ${statusBadge}
+            </div>
+          </div>
+
+          <!-- Bold Red Alert if chosen combination is not available in stock -->
+          ${isOOS ? `
+            <div class="cart-oos-alert" style="color:#b91c1c; font-weight:800; font-size:12px; background:#fef2f2; border:1.5px solid #ef4444; padding:8px 12px; border-radius:8px; display:flex; align-items:center; gap:6px; line-height:1.4;">
+              <span style="font-size:15px;">⚠️</span>
+              <span>Not Available in Stock — please choose another size or color</span>
+            </div>
+          ` : ''}
         </div>
-        <div class="qty-control">
-          <button data-m="${id}" aria-label="Decrease">−</button>
-          <b>${c.qty}</b>
-          <button data-a="${id}" aria-label="Increase">+</button>
-        </div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
   } else {
     listEl.innerHTML = `
       <div class="empty-state" style="padding: 30px 10px; margin: 10px 0;">
@@ -974,6 +1082,28 @@ function renderCart() {
 
   listEl.querySelectorAll('[data-a]').forEach(e => e.onclick = () => changeQuantity(+e.dataset.a, 1));
   listEl.querySelectorAll('[data-m]').forEach(e => e.onclick = () => changeQuantity(+e.dataset.m, -1));
+  listEl.querySelectorAll('[data-r]').forEach(e => e.onclick = () => removeCartItem(+e.dataset.r));
+
+  // Enable/Disable Place Order based on Stock Availability
+  const placeBtn = $('#placeOrderBtn');
+  const orderMsg = $('#orderMsg');
+  if (placeBtn) {
+    if (hasOutOfStockCombinations || !items.length) {
+      placeBtn.disabled = true;
+      placeBtn.style.opacity = '0.5';
+      placeBtn.style.cursor = 'not-allowed';
+      if (hasOutOfStockCombinations && orderMsg) {
+        orderMsg.innerHTML = '<div style="color:#b91c1c; font-weight:800; font-size:12.5px; padding:8px 12px; background:#fef2f2; border:1.5px solid #fecaca; border-radius:8px; margin-top:8px; text-align:center;">⚠️ Not Available in Stock — please choose another size or color for marked items before placing order.</div>';
+      } else if (orderMsg) {
+        orderMsg.innerHTML = '';
+      }
+    } else {
+      placeBtn.disabled = false;
+      placeBtn.style.opacity = '1';
+      placeBtn.style.cursor = 'pointer';
+      if (orderMsg) orderMsg.innerHTML = '';
+    }
+  }
 
   // Bill Summary
   $('#sSub').textContent = inr(t.sub);
@@ -1280,13 +1410,14 @@ $('#checkout').onsubmit = async ev => {
   msg.textContent = '';
 
   const items = Object.entries(cart).map(([id, c]) => {
-    const colorLabel = c.color ? ` [${c.color}]` : '';
-    const variantLabel = c.variant ? ` (${c.variant})` : '';
+    const colorLabel = c.color && c.color.toLowerCase() !== 'default' ? ` [${c.color}]` : '';
+    const variantLabel = c.size ? ` (${c.size})` : (c.variant ? ` (${c.variant})` : '');
     return { 
       id: +id, 
       qty: c.qty, 
-      variant: c.variant || (c.p ? c.p.unit : 'Standard'),
-      color: c.color || '',
+      size: c.size || '',
+      color: c.color || 'Default',
+      variant: c.variant || (c.size ? (c.size + (c.color && c.color !== 'Default' ? ' - ' + c.color : '')) : (c.p ? c.p.unit : 'Standard')),
       name: (c.p ? c.p.name : `Product #${id}`) + colorLabel + variantLabel,
       price: c.p ? c.p.price : 0
     };
@@ -1491,13 +1622,15 @@ function renderWishlistModal() {
   }
   container.innerHTML = wishlist.map(item => `
     <div style="display:flex; align-items:center; gap:12px; padding:12px; border-bottom:1px solid #f1f5f9;">
-      <img src="${item.image || 'https://via.placeholder.com/50'}" style="width:48px; height:48px; border-radius:8px; object-fit:cover;">
+      <img src="${item.image || 'https://via.placeholder.com/50'}" style="width:52px; height:52px; border-radius:8px; object-fit:cover;">
       <div style="flex:1;">
-        <div style="font-weight:700; font-size:13px; color:#0f172a;">${esc(item.name)}</div>
-        <div style="font-size:13px; color:#059669; font-weight:700;">₹${item.price} <del style="color:#94a3b8; font-size:11px; margin-left:4px;">₹${item.mrp || ''}</del></div>
+        <div style="font-weight:700; font-size:13.5px; color:#0f172a;">${esc(item.name)}</div>
+        <div style="font-size:13px; color:#059669; font-weight:800; margin-top:2px;">₹${item.price} <del style="color:#94a3b8; font-size:11px; margin-left:4px;">₹${item.mrp || ''}</del></div>
       </div>
-      <button class="btn-add" style="padding:6px 12px; font-size:12px;" onclick="addWishlistToCart(${item.id})">+ Cart</button>
-      <button style="background:none; border:none; cursor:pointer; font-size:18px; color:#ef4444; padding:4px;" onclick="toggleWishlist(${item.id})" title="Remove">✕</button>
+      <button class="btn-add" style="padding:6px 14px; font-size:12.5px; font-weight:700;" onclick="addWishlistToCart(${item.id})">+ Cart</button>
+      <button class="btn-wishlist-remove" style="background:#fee2e2; border:none; color:#ef4444; border-radius:8px; padding:6px 12px; cursor:pointer; font-size:13px; font-weight:700; display:inline-flex; align-items:center; gap:4px;" onclick="toggleWishlist(${item.id})" title="Remove from Wishlist">
+        🗑️ Remove
+      </button>
     </div>
   `).join('');
 }

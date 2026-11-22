@@ -62,15 +62,32 @@ async function getCatalog() {
 
 // Unified Products helper
 async function getProducts(query = {}) {
+  let list = [];
   if (supabaseDb.isConfigured()) {
     try {
       const prods = await supabaseDb.getProducts(query);
-      if (prods && prods.length) return prods;
+      if (prods && Array.isArray(prods)) list = [...prods];
     } catch (e) {
       console.warn('Supabase getProducts failed, using local:', e.message);
     }
   }
-  return localDb.getProducts(query);
+
+  // Also merge any localDb products that are not already in list by ID
+  try {
+    const localProds = await localDb.getProducts(query);
+    if (localProds && localProds.length) {
+      const existingIds = new Set(list.map(p => String(p.id)));
+      for (const lp of localProds) {
+        if (!existingIds.has(String(lp.id))) {
+          list.push(lp);
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('LocalDb getProducts error:', e.message);
+  }
+
+  return list;
 }
 
 // ETA calculation
@@ -246,11 +263,13 @@ app.post('/api/orders', wrap(async (req, res) => {
         const pId = item.id;
         const qty = Number(item.qty || 1);
         const varName = item.variant || item.unit || 'Standard';
+        const colorName = item.color || '';
+        const sizeName = item.size || '';
         if (supabaseDb.isConfigured()) {
-          supabaseDb.deductProductStock(pId, qty, varName).catch(e => console.warn('Supabase stock deduction warn:', e.message));
+          supabaseDb.deductProductStock(pId, qty, varName, colorName, sizeName).catch(e => console.warn('Supabase stock deduction warn:', e.message));
         }
         try {
-          localDb.deductProductStock(pId, qty, varName);
+          localDb.deductProductStock(pId, qty, varName, colorName, sizeName);
         } catch (e) {
           console.warn('LocalDB stock deduction warn:', e.message);
         }
@@ -564,11 +583,15 @@ app.post('/api/admin/theme', requireAdmin, wrap(async (req, res) => {
 }));
 
 // Admin Products CRUD
-app.get('/api/admin/products', requireAdmin, wrap(async (req, res) => {
-  res.json(localDb.data.products || []);
+app.get(['/api/admin/products', '/api/products/all'], requireAdmin, wrap(async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  const prods = await getProducts();
+  res.json(prods || []);
 }));
 
-app.post('/api/admin/products', requireAdmin, wrap(async (req, res) => {
+app.post(['/api/admin/products', '/api/products'], requireAdmin, wrap(async (req, res) => {
   const prodData = { ...req.body };
   if (Array.isArray(req.body.variants)) prodData.variants = req.body.variants;
   if (Array.isArray(req.body.colors)) prodData.colors = req.body.colors;
@@ -580,11 +603,13 @@ app.post('/api/admin/products', requireAdmin, wrap(async (req, res) => {
   if (!name || !price) return res.status(400).json({ error: 'Product name and price are required' });
 
   let sbCreated = null;
+  let sbError = null;
   if (supabaseDb.isConfigured()) {
     try {
-      sbCreated = await supabaseDb.createProduct(prodData);
+      sbCreated = await supabaseDb.addProduct(prodData);
     } catch (e) {
-      console.warn('Supabase createProduct warning:', e.message);
+      sbError = e.message;
+      console.warn('Supabase addProduct warning:', e.message);
     }
   }
 
@@ -611,10 +636,18 @@ app.post('/api/admin/products', requireAdmin, wrap(async (req, res) => {
   localDb.data.products.unshift(newProduct);
   localDb.save();
 
+  if (sbError && !sbCreated) {
+    return res.json({ 
+      success: true, 
+      product: newProduct, 
+      warning: `Saved to local store. Supabase alert: ${sbError}` 
+    });
+  }
+
   res.json({ success: true, product: sbCreated || newProduct });
 }));
 
-app.put('/api/admin/products/:id', requireAdmin, wrap(async (req, res) => {
+app.put(['/api/admin/products/:id', '/api/products/:id'], requireAdmin, wrap(async (req, res) => {
   const id = Number(req.params.id);
   const prodData = { ...req.body };
   if (Array.isArray(req.body.variants)) prodData.variants = req.body.variants;
@@ -622,10 +655,12 @@ app.put('/api/admin/products/:id', requireAdmin, wrap(async (req, res) => {
   if (req.body.subcategory_id) prodData.subcategory_id = Number(req.body.subcategory_id);
 
   let updatedSb = null;
+  let sbError = null;
   if (supabaseDb.isConfigured()) {
     try {
       updatedSb = await supabaseDb.updateProduct(id, prodData);
     } catch (e) {
+      sbError = e.message;
       console.warn('Supabase updateProduct warning:', e.message);
     }
   }
@@ -655,11 +690,14 @@ app.put('/api/admin/products/:id', requireAdmin, wrap(async (req, res) => {
     localDb.save();
   }
 
-  res.json({ success: true, product: updatedSb || p || { id, ...prodData } });
+  res.json({ success: true, product: updatedSb || p || { id, ...prodData }, ...(sbError ? { warning: sbError } : {}) });
 }));
 
-app.delete('/api/admin/products/:id', requireAdmin, wrap(async (req, res) => {
+app.delete(['/api/admin/products/:id', '/api/products/:id'], requireAdmin, wrap(async (req, res) => {
   const id = Number(req.params.id);
+  if (supabaseDb.isConfigured()) {
+    try { await supabaseDb.deleteProduct(id); } catch(e) {}
+  }
   localDb.data.products = localDb.data.products.filter(x => x.id !== id);
   localDb.save();
   res.json({ success: true, message: 'Product deleted' });
@@ -736,7 +774,7 @@ app.post('/api/auth/login', wrap(async (req, res) => {
   res.json({ success: true, token, user: { id: user.id, name: user.name, phone: user.phone, email: user.email } });
 }));
 
-
+// Start server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, async () => {
   console.log(`✓ Aashvi Hub Server running on http://localhost:${PORT}`);

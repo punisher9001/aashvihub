@@ -126,25 +126,29 @@ function handleCategoryChange(catId) {
   }
 }
 
-function renderVariantRow(name = '', stock = 20, price = '') {
+function renderVariantRow(size = '', color = 'Default', stock = 10, price = '') {
   const container = $('#variantsContainer');
   if (!container) return;
 
-  // Don't add duplicate variant name
-  const existing = Array.from(container.querySelectorAll('.var-name')).map(i => i.value.trim().toLowerCase());
-  if (name && existing.includes(name.trim().toLowerCase())) {
-    // Focus existing row
-    return;
-  }
-
   const row = document.createElement('div');
   row.className = 'variant-matrix-row';
-  row.style.cssText = 'display:grid; grid-template-columns:1.2fr 1fr 1fr auto; gap:8px; align-items:center; background:#ffffff; padding:6px 8px; border:1px solid #e2e8f0; border-radius:8px;';
+  row.style.cssText = 'display:grid; grid-template-columns:1.2fr 1fr 1fr 1fr auto; gap:8px; align-items:center; background:#ffffff; padding:8px 10px; border:1px solid #cbd5e1; border-radius:8px;';
   row.innerHTML = `
-    <input type="text" class="form-control var-name" placeholder="Size/Weight (e.g. M, 500g)" value="${escapeHtml(name)}" required style="font-weight:700;">
-    <input type="number" class="form-control var-price" placeholder="Price ₹ (opt)" value="${price || ''}" min="0">
-    <input type="number" class="form-control var-stock" placeholder="Stock Qty" min="0" value="${stock}" required style="font-weight:600;">
-    <button type="button" class="btn btn-danger btn-sm" onclick="this.parentElement.remove()" style="padding:6px 10px;" title="Remove variant">✕</button>
+    <div>
+      <input type="text" class="form-control var-size" placeholder="Size/Pack (e.g. M, 500g)" value="${escapeHtml(size)}" required style="font-weight:700; padding:6px 10px; font-size:13px;">
+    </div>
+    <div>
+      <input type="text" class="form-control var-color" placeholder="Color (e.g. Yellow, Red)" value="${escapeHtml(color || 'Default')}" style="padding:6px 10px; font-size:13px;">
+    </div>
+    <div>
+      <input type="number" class="form-control var-price" placeholder="Price ₹ (opt)" value="${price || ''}" min="0" style="padding:6px 10px; font-size:13px;">
+    </div>
+    <div>
+      <input type="number" class="form-control var-stock" placeholder="Stock Qty" min="0" value="${stock}" required style="font-weight:700; padding:6px 10px; font-size:13px; color:#059669;">
+    </div>
+    <div>
+      <button type="button" class="btn btn-danger btn-sm" onclick="this.closest('.variant-matrix-row').remove()" style="padding:6px 10px;" title="Remove variant">✕</button>
+    </div>
   `;
   container.appendChild(row);
 }
@@ -153,11 +157,20 @@ function getVariantsPayload() {
   const rows = $$('#variantsContainer .variant-matrix-row');
   const variants = [];
   rows.forEach(r => {
-    const name = r.querySelector('.var-name')?.value.trim();
+    const size = r.querySelector('.var-size')?.value.trim();
+    const color = r.querySelector('.var-color')?.value.trim() || 'Default';
     const stock = Math.max(0, parseInt(r.querySelector('.var-stock')?.value, 10) || 0);
     const pVal = r.querySelector('.var-price')?.value;
     const price = pVal !== '' && !isNaN(Number(pVal)) && Number(pVal) > 0 ? Number(pVal) : undefined;
-    if (name) variants.push({ name, stock, ...(price ? { price } : {}) });
+    if (size) {
+      variants.push({
+        size,
+        color,
+        name: size + (color.toLowerCase() !== 'default' ? ` - ${color}` : ''),
+        stock,
+        ...(price ? { price } : {})
+      });
+    }
   });
   return variants;
 }
@@ -167,7 +180,8 @@ function setupPresetButtons() {
   $$('.preset-btn').forEach(btn => {
     btn.onclick = () => {
       const presetName = btn.dataset.preset;
-      renderVariantRow(presetName, 20);
+      const defColor = activeProductColors[0] || 'Default';
+      renderVariantRow(presetName, defColor, 20);
     };
   });
 }
@@ -622,9 +636,9 @@ window.openEditProduct = function(id) {
   if (vCont) {
     vCont.innerHTML = '';
     if (Array.isArray(p.variants) && p.variants.length > 0) {
-      p.variants.forEach(v => renderVariantRow(v.name, v.stock, v.price));
+      p.variants.forEach(v => renderVariantRow(v.size || v.name, v.color || 'Default', v.stock, v.price));
     } else {
-      renderVariantRow(p.unit || 'Standard', p.stock || 20, p.price);
+      renderVariantRow(p.unit || 'Standard', (p.colors && p.colors[0]) || 'Default', p.stock || 20, p.price);
     }
   }
 
@@ -640,36 +654,36 @@ async function handleAddProduct(e) {
 
   const catObj = globalCatalog.find(c => String(c.id) === String($('#newProdCategory').value));
   const subObj = catObj && Array.isArray(catObj.subs) ? catObj.subs.find(s => String(s.id) === String(subcategoryId)) : null;
+  const distinctSizes = [...new Set(variants.map(v => v.size).filter(Boolean))];
+  const distinctColors = [...new Set([...activeProductColors, ...variants.map(v => v.color).filter(c => c && c.toLowerCase() !== 'default')])];
+
   const prodPayload = {
     name: $('#newProdName').value.trim(),
     category_id: Number($('#newProdCategory').value) || null,
     subcategory_id: subcategoryId,
     category: catObj ? catObj.name : '',
     subcategory: subObj ? subObj.name : '',
-    colors: activeProductColors,
-    sizes: variants.map(v => v.name),
+    colors: distinctColors,
+    sizes: distinctSizes,
     price: Number($('#newProdPrice').value),
     mrp: Number($('#newProdMrp').value) || Number($('#newProdPrice').value),
     stock: totalStock,
-    unit: $('#newProdUnit')?.value || (variants[0] ? variants[0].name : 'Standard'),
+    unit: $('#newProdUnit')?.value || (variants[0] ? variants[0].size : 'Standard'),
     image: $('#newProdImage').value.trim(),
     description: $('#newProdDesc').value.trim(),
     variants: variants
   };
 
   try {
-    if (editId) {
-      await adminApi(`/api/admin/products/${editId}`, {
-        method: 'PUT',
-        body: JSON.stringify(prodPayload)
-      });
-      alert('✓ Product #' + editId + ' updated successfully!');
+    const res = await adminApi(editId ? `/api/admin/products/${editId}` : '/api/admin/products', {
+      method: editId ? 'PUT' : 'POST',
+      body: JSON.stringify(prodPayload)
+    });
+
+    if (res.warning) {
+      alert('Product saved! Notice: ' + res.warning);
     } else {
-      await adminApi('/api/admin/products', {
-        method: 'POST',
-        body: JSON.stringify(prodPayload)
-      });
-      alert('✓ Product added successfully!');
+      alert(editId ? `✓ Product #${editId} updated successfully!` : '✓ Product added successfully!');
     }
 
     $('#addProductModal')?.classList.remove('open');
